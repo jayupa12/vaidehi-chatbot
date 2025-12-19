@@ -6,6 +6,14 @@ import os
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # frontend allow
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 class ChatRequest(BaseModel):
     message: str
@@ -83,4 +91,5 @@ def chat(req: ChatRequest):
     )
 
     return {"reply": response.choices[0].message.content}
+
 
