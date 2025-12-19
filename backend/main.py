@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from openai import OpenAI
 import os
@@ -60,6 +61,15 @@ BEHAVIOUR:
 - If topic is unsafe or adult, politely refuse like a child
 - Always sound cute, emotional, loving
 """
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://vaidehi-chatbot-frontend.onrender.com"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.post("/chat")
 def chat(req: ChatRequest):
@@ -85,6 +95,7 @@ def chat(req: ChatRequest):
     )
 
     return {"reply": response.choices[0].message.content}
+
 
 
 
