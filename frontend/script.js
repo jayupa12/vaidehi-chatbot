@@ -7,7 +7,7 @@ const sendSound = new Audio("assets/send.mp3");
 const receiveSound = new Audio("assets/receive.mp3");
 
 // 🔗 BACKEND URL (Render wala)
-const BACKEND_URL = "https://vaidehi-chatbot-17mp.onrender.com/docs#/default/chat_chat_post";
+const BACKEND_URL = "https://vaidehi-chatbot-17mp.onrender.com/chat";
 // Local test ke liye:
 // const BACKEND_URL = "http://127.0.0.1:8000/chat";
 
@@ -75,5 +75,6 @@ function escapeHTML(text) {
 window.onload = () => {
   input.focus();
 };
+
 
 
