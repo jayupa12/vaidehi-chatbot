@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Vaidehi 🧸</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="chat-container">
+
+    <!-- HEADER -->
+    <div class="header">
+      <img src="assets/dp.jpeg" class="dp" />
+      <div class="header-text">
+        <div class="name">Vaidehi 🧸</div>
+        <div class="status">online</div>
+      </div>
+    </div>
+
+    <!-- CHAT BOX -->
+    <div id="chat-box"></div>
+
+    <!-- TYPING INDICATOR -->
+    <div id="typing" class="typing">Vaidehi is typing…</div>
+
+    <!-- INPUT AREA -->
+    <div class="input-area">
+      <input
+        id="message"
+        type="text"
+        placeholder="Type a message…"
+        onkeydown="if(event.key==='Enter') sendMessage()"
+      />
+      <button onclick="sendMessage()">➤</button>
+    </div>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
