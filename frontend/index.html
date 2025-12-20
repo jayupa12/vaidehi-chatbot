@@ -1,36 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Vaidehi 🧸</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
 <!-- 🔐 LOGIN CHECK -->
 <script>
   const uid = localStorage.getItem("vaidehi_user_id");
-  if (!uid) {
-    window.location.replace("login.html");
-  }
+  if (!uid) window.location.replace("login.html");
 </script>
 
 <div class="chat-container">
 
-  <!-- ✅ HEADER -->
+  <!-- HEADER -->
   <div class="header">
 
-    <!-- LEFT SIDE (DP + NAME) -->
     <div class="header-left">
       <img src="assets/dp.jpeg" class="dp" alt="Vaidehi">
       <div class="header-text">
         <div class="name">Vaidehi 🧸</div>
-        <div class="status">online</div>
+        <div class="status">
+          <span class="dot"></span> online
+        </div>
       </div>
     </div>
 
-    <!-- RIGHT SIDE (LOGOUT) -->
     <button class="logout-btn" onclick="logout()">Logout</button>
 
   </div>
@@ -45,6 +43,7 @@
   <div class="input-area">
     <input
       id="message"
+      type="text"
       placeholder="Type a message…"
       onkeydown="if(event.key==='Enter') sendMessage()"
     />
