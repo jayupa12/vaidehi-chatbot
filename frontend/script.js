@@ -126,3 +126,13 @@ input.addEventListener("keypress", function (e) {
     sendMessage();
   }
 });
+function logout() {
+  if (!confirm("Logout karna hai? 😢")) return;
+
+  localStorage.removeItem("vaidehi_user_id");
+  localStorage.removeItem("vaidehi_user_name");
+
+  window.location.replace("login.html");
+}
+
+
