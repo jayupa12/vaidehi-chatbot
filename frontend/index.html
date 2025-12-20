@@ -8,14 +8,13 @@
 </head>
 <body>
 
-  <!-- 🔐 LOGIN CHECK (MUST BE FIRST) -->
+  <!-- 🔐 LOGIN CHECK (FIRST THING) -->
   <script>
     const userId = localStorage.getItem("vaidehi_user_id");
     const userName = localStorage.getItem("vaidehi_user_name");
 
     if (!userId || !userName) {
       window.location.replace("login.html");
-      return;
     }
   </script>
 
@@ -24,38 +23,32 @@
     <!-- HEADER -->
     <div class="header">
       <img src="assets/dp.jpeg" class="dp" />
-
       <div class="header-text">
         <div class="name">Vaidehi 🧸</div>
         <div class="status">online</div>
       </div>
-
-      <!-- LOGOUT -->
       <button class="logout-btn" onclick="logout()">Logout</button>
     </div>
 
     <!-- CHAT BOX -->
     <div id="chat-box"></div>
 
-    <!-- TYPING INDICATOR -->
+    <!-- TYPING -->
     <div id="typing" class="typing">Vaidehi is typing…</div>
 
-    <!-- INPUT AREA -->
+    <!-- INPUT -->
     <div class="input-area">
       <input
         id="message"
         type="text"
         placeholder="Type a message…"
-        autocomplete="off"
-        onkeydown="if(event.key==='Enter') sendMessage()"
       />
       <button onclick="sendMessage()">➤</button>
     </div>
 
   </div>
 
-  <!-- MAIN CHAT SCRIPT (LAST) -->
+  <!-- MAIN SCRIPT -->
   <script src="script.js"></script>
-
 </body>
 </html>
