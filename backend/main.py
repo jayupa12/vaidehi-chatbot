@@ -39,11 +39,14 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://vaidehi-chatbot-frontend.onrender.com"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 class ChatRequest(BaseModel):
     message: str
@@ -192,3 +195,4 @@ def history(user_id: str):
     if not user:
         return []
     return user.get("chat_history", [])
+
