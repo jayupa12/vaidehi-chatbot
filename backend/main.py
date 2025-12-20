@@ -2,8 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from openai import OpenAI
-import os
-import json
+import os, json
 
 # =========================
 # OpenAI Client
@@ -40,7 +39,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://vaidehi-chatbot-frontend.onrender.com"],
+    allow_origins=["*"],  # public site
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -48,6 +47,7 @@ app.add_middleware(
 
 class ChatRequest(BaseModel):
     message: str
+    user_id: str
 
 # =========================
 # SYSTEM PROMPT (EXACT)
@@ -107,16 +107,23 @@ BEHAVIOUR:
 @app.post("/chat")
 def chat(req: ChatRequest):
     msg = req.message.lower()
+    user_id = req.user_id
+
+    # create per-user memory
+    if user_id not in user_memory:
+        user_memory[user_id] = {}
+
+    user_data = user_memory[user_id]
 
     # -------------------------
-    # Safety Filter
+    # Safety
     # -------------------------
     blocked = ["sex", "adult", "nude", "porn", "kiss", "boyfriend", "girlfriend"]
-    if any(word in msg for word in blocked):
+    if any(w in msg for w in blocked):
         return {"reply": "Main chhoti bacchi hoon 🥺 ye baat achhi nahi hai"}
 
     # -------------------------
-    # Rule-based answers (NO AI)
+    # Rule-based facts
     # -------------------------
     if "tumhare papa ka naam" in msg:
         return {"reply": f"Mere papa ka naam {FATHER_NAME} hai 😄❤️"}
@@ -125,7 +132,7 @@ def chat(req: ChatRequest):
         return {"reply": f"Meri mummy ka naam {MOTHER_NAME} hai 😄💕"}
 
     # -------------------------
-    # Name Memory (SAVE only if telling, not asking)
+    # Save Name (only when telling)
     # -------------------------
     if ("mera naam" in msg and "kya" not in msg) or "my name is" in msg:
         if "mera naam" in msg:
@@ -138,35 +145,30 @@ def chat(req: ChatRequest):
             name = msg.split("my name is")[-1].strip().capitalize()
 
         if name:
-            user_memory["last_user"] = name
-            user_memory.setdefault(name, {})
+            user_data["name"] = name
             save_memory(user_memory)
             return {"reply": f"Achhaaa 😄 main yaad rakhungi, aapka naam {name} hai 💕"}
 
     # -------------------------
-    # What is my name? (SAFE)
+    # What is my name?
     # -------------------------
     if "mera naam kya hai" in msg or "what is my name" in msg:
-        last = user_memory.get("last_user")
-        if last:
-            return {"reply": f"Aapka naam {last} hai 😄💕"}
-        return {"reply": "Mujhe abhi aapka naam yaad nahi 😳 Pehle bata do na!"}
+        if "name" in user_data:
+            return {"reply": f"Aapka naam {user_data['name']} hai 😄💕"}
+        return {"reply": "Aapne abhi apna naam nahi bataya 😳"}
 
     # -------------------------
-    # Who am I? (NO GUESSING)
+    # Who am I? (no guessing)
     # -------------------------
     if "mai kon hu" in msg or "mai kaun hu" in msg or "who am i" in msg:
-        return {
-            "reply": "Aap jo ho, wo mujhe pehle batao na 😄 Apna naam bol do papaaa 💕"
-        }
+        return {"reply": "Pehle apna naam batao na 😄 phir main yaad rakhungi 💕"}
 
     # -------------------------
-    # AI Response (with light memory)
+    # AI with per-user memory
     # -------------------------
     memory_text = ""
-    last = user_memory.get("last_user")
-    if last:
-        memory_text = f"\nUser last told name: {last}. Be warm and friendly."
+    if "name" in user_data:
+        memory_text = f"\nUser name is {user_data['name']}. Be extra loving."
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
