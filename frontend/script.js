@@ -6,32 +6,55 @@ const typing = document.getElementById("typing");
 const sendSound = new Audio("assets/send.mp3");
 const receiveSound = new Audio("assets/receive.mp3");
 
-// 🔗 BACKEND URL (Render)
-const BACKEND_URL = "https://vaidehi-chatbot-17mp.onrender.com/chat";
-// Local test:
-// const BACKEND_URL = "http://127.0.0.1:8000/chat";
+// 🔗 BACKEND URL
+const BACKEND_URL = "https://vaidehi-chatbot-17mp.onrender.com";
 
 // ===============================
-// 👤 WhatsApp-style USER ID
+// 👤 USER INFO (from login)
 // ===============================
-let userId = localStorage.getItem("vaidehi_user_id");
+const userId = localStorage.getItem("vaidehi_user_id");
+const userName = localStorage.getItem("vaidehi_user_name");
 
-if (!userId) {
-  userId = "user_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
-  localStorage.setItem("vaidehi_user_id", userId);
-  console.log("New user_id created:", userId);
-} else {
-  console.log("Existing user_id:", userId);
+// ===============================
+// 📜 LOAD CHAT HISTORY
+// ===============================
+async function loadHistory() {
+  try {
+    const res = await fetch(
+      `${BACKEND_URL}/history?user_id=${userId}`
+    );
+    const history = await res.json();
+
+    history.forEach(msg => {
+      if (msg.from === "user") {
+        chat.innerHTML += `
+          <div class="user">
+            <span>${escapeHTML(msg.text)}</span>
+          </div>
+        `;
+      } else {
+        chat.innerHTML += `
+          <div class="bot">
+            <span>${escapeHTML(msg.text)}</span>
+          </div>
+        `;
+      }
+    });
+
+    chat.scrollTop = chat.scrollHeight;
+  } catch (err) {
+    console.error("History load failed", err);
+  }
 }
 
 // ===============================
-// 💬 Send Message
+// 💬 SEND MESSAGE
 // ===============================
 async function sendMessage() {
   const msg = input.value.trim();
   if (!msg) return;
 
-  // Show user message
+  // show user message instantly
   chat.innerHTML += `
     <div class="user">
       <span>${escapeHTML(msg)}</span>
@@ -41,25 +64,22 @@ async function sendMessage() {
 
   input.value = "";
   sendSound.play();
-
-  // Show typing indicator
   typing.style.display = "block";
 
   try {
-    const res = await fetch(BACKEND_URL, {
+    const res = await fetch(`${BACKEND_URL}/chat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
         message: msg,
-        user_id: userId   // ✅ VERY IMPORTANT
+        user_id: userId   // ⭐ VERY IMPORTANT
       })
     });
 
     const data = await res.json();
 
-    // Fake typing delay
     setTimeout(() => {
       typing.style.display = "none";
 
@@ -70,10 +90,9 @@ async function sendMessage() {
       `;
       chat.scrollTop = chat.scrollHeight;
       receiveSound.play();
-    }, 1200);
+    }, 800);
 
   } catch (error) {
-    console.error(error);
     typing.style.display = "none";
     chat.innerHTML += `
       <div class="bot">
@@ -94,10 +113,11 @@ function escapeHTML(text) {
 }
 
 // ===============================
-// ⌨️ UX helpers
+// 🚀 ON PAGE LOAD
 // ===============================
 window.onload = () => {
   input.focus();
+  loadHistory(); // ⭐ STEP-3 MAGIC
 };
 
 // Enter key support
