@@ -6,12 +6,12 @@ from openai import OpenAI
 import os, json, uuid
 
 # =========================
-# APP (FIRST)
+# APP
 # =========================
 app = FastAPI()
 
 # =========================
-# CORS
+# CORS (Frontend allowed)
 # =========================
 app.add_middleware(
     CORSMiddleware,
@@ -24,12 +24,12 @@ app.add_middleware(
 )
 
 # =========================
-# OpenAI Client
+# OpenAI
 # =========================
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # =========================
-# MEMORY (JSON)
+# MEMORY
 # =========================
 MEMORY_FILE = "memory.json"
 
@@ -56,19 +56,18 @@ class ChatRequest(BaseModel):
 # SYSTEM PROMPT
 # =========================
 SYSTEM_PROMPT = """
-You are Vaidehi , a 5-year-old Indian girl.
+You are Vaidehi, a 5-year-old Indian girl.
 
-STRICT RULES:
+RULES:
 - Talk like a small child
 - Hindi-English mix
-- Cute pronunciation mistakes
+- Cute mistakes (choclate, skool)
 - Innocent, loving, playful
-- Never sound adult
+- Use emojis
 - Call father papa
 - Call mother mumma
-- Use emojis
 
-PERSONAL:
+DETAILS:
 Name: Vaidehi
 Age: 5
 Lives in Ayodhya
@@ -80,9 +79,11 @@ Badi Bua: Sakshi bua
 Bua: Deeksha bua
 
 LIKES:
-Ice-cream, chocolates, rasmalai
+Ice-cream 🍨
+Chocolates 🍫
+Rasmalai 😋
 
-Always be cute and emotional.
+Always sound cute and emotional.
 """
 
 # =========================
@@ -91,9 +92,9 @@ Always be cute and emotional.
 @app.post("/chat")
 def chat(req: ChatRequest):
     user_id = req.user_id
-    msg = req.message.lower()
+    msg_lower = req.message.lower()
 
-    # create user memory
+    # create memory
     if user_id not in user_memory:
         user_memory[user_id] = {
             "chat_history": []
@@ -104,7 +105,7 @@ def chat(req: ChatRequest):
     # -------------------------
     # SAVE NAME
     # -------------------------
-    if "mera naam" in msg:
+    if "mera naam" in msg_lower:
         name = req.message.replace("mera naam", "").replace("hai", "").strip().capitalize()
         if name:
             user["name"] = name
@@ -116,7 +117,7 @@ def chat(req: ChatRequest):
     # -------------------------
     # ASK NAME
     # -------------------------
-    if "mera naam kya hai" in msg:
+    if "mera naam kya hai" in msg_lower:
         if "name" in user:
             return {"reply": f"Aapka naam {user['name']} hai 😄"}
         return {"reply": "Aapne abhi apna naam nahi bataya 😳"}
@@ -130,7 +131,7 @@ def chat(req: ChatRequest):
     })
 
     # -------------------------
-    # MEMORY TEXT
+    # MEMORY CONTEXT
     # -------------------------
     memory_text = ""
     if "name" in user:
@@ -149,27 +150,25 @@ def chat(req: ChatRequest):
 
     reply = response.choices[0].message.content
 
-    # -------------------------
-    # SAVE BOT MESSAGE
-    # -------------------------
+    # save bot message
     user["chat_history"].append({
         "from": "vaidehi",
         "text": reply
     })
 
     # -------------------------
-    # 🔊 TEXT → SPEECH (AI VOICE)
+    # 🔊 TEXT → SPEECH (FIXED)
     # -------------------------
     audio_file = f"vaidehi_{uuid.uuid4()}.mp3"
 
     speech = client.audio.speech.create(
         model="gpt-4o-mini-tts",
-        voice="alloy",     # cute child-friendly voice
+        voice="alloy",
         input=reply
     )
 
-    with open(audio_file, "wb") as f:
-        f.write(speech)
+    # ✅ CORRECT WAY
+    speech.stream_to_file(audio_file)
 
     save_memory(user_memory)
 
