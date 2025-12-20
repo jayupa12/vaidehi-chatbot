@@ -8,6 +8,16 @@
 </head>
 <body>
 
+  <!-- 🔐 LOGIN CHECK (MUST BE FIRST) -->
+  <script>
+    const userId = localStorage.getItem("vaidehi_user_id");
+    const userName = localStorage.getItem("vaidehi_user_name");
+
+    if (!userId || !userName) {
+      window.location.replace("login.html");
+    }
+  </script>
+
   <div class="chat-container">
 
     <!-- HEADER -->
@@ -38,17 +48,8 @@
 
   </div>
 
+  <!-- MAIN CHAT SCRIPT (LAST) -->
   <script src="script.js"></script>
-  <script>
-  const userId = localStorage.getItem("vaidehi_user_id");
-  const userName = localStorage.getItem("vaidehi_user_name");
-
-  if (!userId || !userName) {
-    // Login nahi hai → login page
-    window.location.href = "login.html";
-  }
-</script>
 
 </body>
 </html>
-
