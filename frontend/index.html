@@ -15,6 +15,7 @@
 
     if (!userId || !userName) {
       window.location.replace("login.html");
+      return;
     }
   </script>
 
@@ -23,12 +24,14 @@
     <!-- HEADER -->
     <div class="header">
       <img src="assets/dp.jpeg" class="dp" />
+
       <div class="header-text">
         <div class="name">Vaidehi 🧸</div>
         <div class="status">online</div>
       </div>
-      <button class="logout-btn" onclick="logout()">Logout</button>
 
+      <!-- LOGOUT -->
+      <button class="logout-btn" onclick="logout()">Logout</button>
     </div>
 
     <!-- CHAT BOX -->
@@ -43,6 +46,7 @@
         id="message"
         type="text"
         placeholder="Type a message…"
+        autocomplete="off"
         onkeydown="if(event.key==='Enter') sendMessage()"
       />
       <button onclick="sendMessage()">➤</button>
@@ -55,4 +59,3 @@
 
 </body>
 </html>
-
