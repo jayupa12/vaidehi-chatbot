@@ -39,7 +39,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # public site
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -50,7 +50,7 @@ class ChatRequest(BaseModel):
     user_id: str
 
 # =========================
-# SYSTEM PROMPT (EXACT)
+# SYSTEM PROMPT
 # =========================
 SYSTEM_PROMPT = """
 You are Vaidehi , a 5-year-old Indian girl.
@@ -100,7 +100,6 @@ BEHAVIOUR:
 - If someone says "good morning", reply cutely to papa
 - If topic is unsafe or adult, politely refuse like a child
 - Always sound cute, emotional, loving
-
 """
 
 # =========================
@@ -111,11 +110,17 @@ def chat(req: ChatRequest):
     msg = req.message.lower()
     user_id = req.user_id
 
-    # create per-user memory
+    # -------------------------
+    # Create per-user memory
+    # -------------------------
     if user_id not in user_memory:
         user_memory[user_id] = {}
 
     user_data = user_memory[user_id]
+
+    # ensure chat history exists
+    if "chat_history" not in user_data:
+        user_data["chat_history"] = []
 
     # -------------------------
     # Safety
@@ -160,10 +165,19 @@ def chat(req: ChatRequest):
         return {"reply": "Aapne abhi apna naam nahi bataya 😳"}
 
     # -------------------------
-    # Who am I? (no guessing)
+    # Who am I?
     # -------------------------
     if "mai kon hu" in msg or "mai kaun hu" in msg or "who am i" in msg:
         return {"reply": "Pehle apna naam batao na 😄 phir main yaad rakhungi 💕"}
+
+    # -------------------------
+    # Save USER message
+    # -------------------------
+    user_data["chat_history"].append({
+        "from": "user",
+        "text": req.message
+    })
+    save_memory(user_memory)
 
     # -------------------------
     # AI with per-user memory
@@ -180,5 +194,25 @@ def chat(req: ChatRequest):
         ]
     )
 
-    return {"reply": response.choices[0].message.content}
+    bot_reply = response.choices[0].message.content
 
+    # -------------------------
+    # Save BOT reply
+    # -------------------------
+    user_data["chat_history"].append({
+        "from": "vaidehi",
+        "text": bot_reply
+    })
+    save_memory(user_memory)
+
+    return {"reply": bot_reply}
+
+# =========================
+# CHAT HISTORY ENDPOINT
+# =========================
+@app.get("/history")
+def get_history(user_id: str):
+    user = user_memory.get(user_id)
+    if not user:
+        return []
+    return user.get("chat_history", [])
