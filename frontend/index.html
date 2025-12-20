@@ -1,44 +1,36 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Vaidehi 🧸</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <div class="chat-container">
+<script>
+  const uid = localStorage.getItem("vaidehi_user_id");
+  if (!uid) location.href = "login.html";
+</script>
 
-    <!-- HEADER -->
-    <div class="header">
-      <img src="assets/dp.jpeg" class="dp" />
-      <div class="header-text">
-        <div class="name">Vaidehi 🧸</div>
-        <div class="status">online</div>
-      </div>
-      <button class="logout-btn" onclick="logout()">Logout</button>
-    </div>
+<div class="chat-container">
 
-    <!-- CHAT BOX -->
-    <div id="chat-box"></div>
-
-    <!-- TYPING -->
-    <div id="typing" class="typing">Vaidehi is typing…</div>
-
-    <!-- INPUT -->
-    <div class="input-area">
-      <input
-        id="message"
-        type="text"
-        placeholder="Type a message…"
-      />
-      <button onclick="sendMessage()">➤</button>
-    </div>
-
+  <div class="header">
+    <span>Vaidehi 🧸 online</span>
+    <button onclick="logout()">Logout</button>
   </div>
 
-  <!-- ✅ ONLY SCRIPT FILE -->
-  <script src="script.js"></script>
+  <div id="chat-box"></div>
+
+  <div id="typing" class="typing">Vaidehi is typing…</div>
+
+  <div class="input-area">
+    <input id="message" placeholder="Type message..." />
+    <button onclick="sendMessage()">➤</button>
+  </div>
+
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>
