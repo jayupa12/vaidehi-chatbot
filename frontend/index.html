@@ -8,16 +8,6 @@
 </head>
 <body>
 
-  <!-- 🔐 LOGIN CHECK (FIRST THING) -->
-  <script>
-    const userId = localStorage.getItem("vaidehi_user_id");
-    const userName = localStorage.getItem("vaidehi_user_name");
-
-    if (!userId || !userName) {
-      window.location.replace("login.html");
-    }
-  </script>
-
   <div class="chat-container">
 
     <!-- HEADER -->
@@ -48,7 +38,7 @@
 
   </div>
 
-  <!-- MAIN SCRIPT -->
+  <!-- ✅ ONLY SCRIPT FILE -->
   <script src="script.js"></script>
 </body>
 </html>
