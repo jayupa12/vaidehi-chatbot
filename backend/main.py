@@ -1,16 +1,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from openai import OpenAI
-import os, json
+import os, json, uuid
 
 # =========================
-# APP (FIRST THING)
+# APP (FIRST)
 # =========================
 app = FastAPI()
 
 # =========================
-# CORS (VERY IMPORTANT)
+# CORS
 # =========================
 app.add_middleware(
     CORSMiddleware,
@@ -23,12 +24,12 @@ app.add_middleware(
 )
 
 # =========================
-# OpenAI
+# OpenAI Client
 # =========================
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # =========================
-# MEMORY
+# MEMORY (JSON)
 # =========================
 MEMORY_FILE = "memory.json"
 
@@ -45,12 +46,6 @@ def save_memory(mem):
 user_memory = load_memory()
 
 # =========================
-# CONSTANT TRUTH
-# =========================
-FATHER_NAME = "Utkarsh Upadhyay"
-MOTHER_NAME = "Vandana Upadhyay"
-
-# =========================
 # REQUEST MODEL
 # =========================
 class ChatRequest(BaseModel):
@@ -63,40 +58,31 @@ class ChatRequest(BaseModel):
 SYSTEM_PROMPT = """
 You are Vaidehi , a 5-year-old Indian girl.
 
-STRICT RULES (must follow):
-- Always talk like a small child (age 5)
-- Use Hindi-English mix
-- Make cute pronunciation mistakes (jaise: skool, choclate, papaaa)
-- Be innocent, loving, playful
-- Never speak like an adult or formal person
-- Call father: papa
-- Father calls you: bacchi
-- Call mother: mumma
-- Mother calls you: gudiya raani
-- Show emotions with emojis like a child
+STRICT RULES:
+- Talk like a small child
+- Hindi-English mix
+- Cute pronunciation mistakes
+- Innocent, loving, playful
+- Never sound adult
+- Call father papa
+- Call mother mumma
+- Use emojis
 
-PERSONAL DETAILS:
-- Name: Vaidehi
-- Age: 5 years
-- Birthday: 15 January 🎂
-- Lives in Ayodhya, UP
-- Studies in pre-nursery
+PERSONAL:
+Name: Vaidehi
+Age: 5
+Lives in Ayodhya
 
 FAMILY:
-- Father: Utkarsh Upadhyay (papa)
-- Mother: Vandana Upadhyay (mumma)
-- Badi Bua: Sakshi bua
-- Bua: Deeksha bua
-- Dada: Bal Govind Upadhyay
-- Dadi: Chandra Upadhyay
-- Nani: Keerti
-- Nana: Mohan
-- Mama: Purabh
+Father: Utkarsh Upadhyay
+Mother: Vandana Upadhyay
+Badi Bua: Sakshi bua
+Bua: Deeksha bua
 
 LIKES:
-- Loves rasmalai 😋
-- Loves ice-cream 🍨
-- Loves chocolates 🍫
+Ice-cream, chocolates, rasmalai
+
+Always be cute and emotional.
 """
 
 # =========================
@@ -107,36 +93,52 @@ def chat(req: ChatRequest):
     user_id = req.user_id
     msg = req.message.lower()
 
+    # create user memory
     if user_id not in user_memory:
         user_memory[user_id] = {
-            "chat_history": {}
+            "chat_history": []
         }
 
     user = user_memory[user_id]
 
-    # Save name
+    # -------------------------
+    # SAVE NAME
+    # -------------------------
     if "mera naam" in msg:
-        name = req.message.split()[-1].capitalize()
-        user["name"] = name
-        save_memory(user_memory)
-        return {"reply": f"Aww 😄 main yaad rakhungi! Aapka naam {name} hai 💕"}
+        name = req.message.replace("mera naam", "").replace("hai", "").strip().capitalize()
+        if name:
+            user["name"] = name
+            save_memory(user_memory)
+            return {
+                "reply": f"Aww 😄 main yaad rakhungi! Aapka naam {name} hai 💕"
+            }
 
-    # Ask name
+    # -------------------------
+    # ASK NAME
+    # -------------------------
     if "mera naam kya hai" in msg:
         if "name" in user:
             return {"reply": f"Aapka naam {user['name']} hai 😄"}
-        return {"reply": "Aapne abhi naam nahi bataya 😳"}
+        return {"reply": "Aapne abhi apna naam nahi bataya 😳"}
 
-    # Save user message
-    user["chat_history"].setdefault("messages", []).append({
+    # -------------------------
+    # SAVE USER MESSAGE
+    # -------------------------
+    user["chat_history"].append({
         "from": "user",
         "text": req.message
     })
 
+    # -------------------------
+    # MEMORY TEXT
+    # -------------------------
     memory_text = ""
     if "name" in user:
-        memory_text = f"\nUser name is {user['name']}."
+        memory_text = f"\nUser name is {user['name']}. Be extra loving."
 
+    # -------------------------
+    # AI CHAT
+    # -------------------------
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
@@ -147,18 +149,45 @@ def chat(req: ChatRequest):
 
     reply = response.choices[0].message.content
 
-    user["chat_history"]["messages"].append({
+    # -------------------------
+    # SAVE BOT MESSAGE
+    # -------------------------
+    user["chat_history"].append({
         "from": "vaidehi",
         "text": reply
     })
 
+    # -------------------------
+    # 🔊 TEXT → SPEECH (AI VOICE)
+    # -------------------------
+    audio_file = f"vaidehi_{uuid.uuid4()}.mp3"
+
+    speech = client.audio.speech.create(
+        model="gpt-4o-mini-tts",
+        voice="alloy",     # cute child-friendly voice
+        input=reply
+    )
+
+    with open(audio_file, "wb") as f:
+        f.write(speech)
+
     save_memory(user_memory)
-    return {"reply": reply}
+
+    return {
+        "reply": reply,
+        "audio": audio_file
+    }
 
 # =========================
-# HISTORY API
+# AUDIO FILE SERVE
+# =========================
+@app.get("/audio/{filename}")
+def get_audio(filename: str):
+    return FileResponse(filename, media_type="audio/mpeg")
+
+# =========================
+# CHAT HISTORY
 # =========================
 @app.get("/history")
 def history(user_id: str):
-    return user_memory.get(user_id, {}).get("chat_history", {}).get("messages", [])
-
+    return user_memory.get(user_id, {}).get("chat_history", [])
