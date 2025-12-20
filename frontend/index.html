@@ -1,31 +1,53 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Vaidehi 🧸</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<!-- 🔐 LOGIN CHECK -->
 <script>
   const uid = localStorage.getItem("vaidehi_user_id");
-  if (!uid) location.href = "login.html";
+  if (!uid) {
+    window.location.replace("login.html");
+  }
 </script>
 
 <div class="chat-container">
 
+  <!-- ✅ HEADER -->
   <div class="header">
-    <span>Vaidehi 🧸 online</span>
-    <button onclick="logout()">Logout</button>
+
+    <!-- LEFT SIDE (DP + NAME) -->
+    <div class="header-left">
+      <img src="assets/dp.jpeg" class="dp" alt="Vaidehi">
+      <div class="header-text">
+        <div class="name">Vaidehi 🧸</div>
+        <div class="status">online</div>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDE (LOGOUT) -->
+    <button class="logout-btn" onclick="logout()">Logout</button>
+
   </div>
 
+  <!-- CHAT BOX -->
   <div id="chat-box"></div>
 
+  <!-- TYPING -->
   <div id="typing" class="typing">Vaidehi is typing…</div>
 
+  <!-- INPUT -->
   <div class="input-area">
-    <input id="message" placeholder="Type message..." />
+    <input
+      id="message"
+      placeholder="Type a message…"
+      onkeydown="if(event.key==='Enter') sendMessage()"
+    />
     <button onclick="sendMessage()">➤</button>
   </div>
 
