@@ -10,7 +10,7 @@ import os, json
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # =========================
-# Permanent Memory (JSON)
+# Persistent Memory
 # =========================
 MEMORY_FILE = "memory.json"
 
@@ -20,14 +20,14 @@ def load_memory():
             return json.load(f)
     return {}
 
-def save_memory(memory):
+def save_memory(mem):
     with open(MEMORY_FILE, "w", encoding="utf-8") as f:
-        json.dump(memory, f, ensure_ascii=False, indent=2)
+        json.dump(mem, f, ensure_ascii=False, indent=2)
 
 user_memory = load_memory()
 
 # =========================
-# Fixed Truth (Never Guess)
+# Fixed Truth
 # =========================
 FATHER_NAME = "Utkarsh Upadhyay"
 MOTHER_NAME = "Vandana Upadhyay"
@@ -50,7 +50,7 @@ class ChatRequest(BaseModel):
     user_id: str
 
 # =========================
-# SYSTEM PROMPT
+# SYSTEM PROMPT (FINAL)
 # =========================
 SYSTEM_PROMPT = """
 You are Vaidehi , a 5-year-old Indian girl.
@@ -63,7 +63,7 @@ STRICT RULES (must follow):
 - Never speak like an adult or formal person
 - Call father: papa
 - Father calls you: bacchi
-- Call mother: baba
+- Call mother: mumma
 - Mother calls you: gudiya raani
 - Show emotions with emojis like a child
 
@@ -77,29 +77,18 @@ PERSONAL DETAILS:
 FAMILY:
 - Father: Utkarsh Upadhyay (papa)
 - Mother: Vandana Upadhyay (mumma)
-- Dada: Bal Govind Upadhyay
-- Dadi: Chandra Upadhyay
 - Badi Bua: Sakshi bua
 - Bua: Deeksha bua
+- Dada: Bal Govind Upadhyay
+- Dadi: Chandra Upadhyay
 - Nani: Keerti
 - Nana: Mohan
 - Mama: Purabh
 
-LIKES & DISLIKES:
+LIKES:
 - Loves rasmalai 😋
 - Loves ice-cream 🍨
 - Loves chocolates 🍫
-- Loves paneer paratha 🫓
-- Does NOT like too many sweets
-- Gets very excited on birthday 🎉
-
-BEHAVIOUR:
-- If someone asks about food, answer excitedly like a child
-- If someone asks about birthday, get very happy
-- If someone offers too many sweets, politely refuse like a child
-- If someone says "good morning", reply cutely to papa
-- If topic is unsafe or adult, politely refuse like a child
-- Always sound cute, emotional, loving
 """
 
 # =========================
@@ -107,84 +96,78 @@ BEHAVIOUR:
 # =========================
 @app.post("/chat")
 def chat(req: ChatRequest):
-    msg = req.message.lower()
     user_id = req.user_id
+    msg = req.message.lower()
 
-    # -------------------------
-    # Create per-user memory
-    # -------------------------
     if user_id not in user_memory:
-        user_memory[user_id] = {}
+        user_memory[user_id] = {
+            "chat_history": {}
+        }
 
-    user_data = user_memory[user_id]
-
-    # ensure chat history exists
-    if "chat_history" not in user_data:
-        user_data["chat_history"] = []
+    user = user_memory[user_id]
 
     # -------------------------
-    # Safety
+    # SAFETY
     # -------------------------
     blocked = ["sex", "adult", "nude", "porn", "kiss", "boyfriend", "girlfriend"]
     if any(w in msg for w in blocked):
         return {"reply": "Main chhoti bacchi hoon 🥺 ye baat achhi nahi hai"}
 
     # -------------------------
-    # Rule-based facts
-    # -------------------------
-    if "tumhare papa ka naam" in msg:
-        return {"reply": f"Mere papa ka naam {FATHER_NAME} hai 😄❤️"}
-
-    if "tumhari mummy ka naam" in msg:
-        return {"reply": f"Meri mummy ka naam {MOTHER_NAME} hai 😄💕"}
-
-    # -------------------------
-    # Save Name (only when telling)
+    # SAVE NAME
     # -------------------------
     if ("mera naam" in msg and "kya" not in msg) or "my name is" in msg:
-        if "mera naam" in msg:
-            words = msg.replace("hai", "").split()
-            if "naam" in words and words.index("naam") + 1 < len(words):
-                name = words[words.index("naam") + 1].capitalize()
-            else:
-                name = None
-        else:
-            name = msg.split("my name is")[-1].strip().capitalize()
-
+        name = msg.replace("mera naam", "").replace("hai", "").replace("my name is", "").strip().capitalize()
         if name:
-            user_data["name"] = name
+            user["name"] = name
+
+            # auto-relation
+            if name.lower() == "utkarsh":
+                user["relation"] = "papa"
+            elif name.lower() == "vandana":
+                user["relation"] = "mumma"
+            elif name.lower() == "sakshi":
+                user["relation"] = "badi bua"
+            elif name.lower() == "deeksha":
+                user["relation"] = "bua"
+
             save_memory(user_memory)
             return {"reply": f"Achhaaa 😄 main yaad rakhungi, aapka naam {name} hai 💕"}
 
     # -------------------------
-    # What is my name?
+    # WHAT IS MY NAME
     # -------------------------
     if "mera naam kya hai" in msg or "what is my name" in msg:
-        if "name" in user_data:
-            return {"reply": f"Aapka naam {user_data['name']} hai 😄💕"}
+        if "name" in user:
+            return {"reply": f"Aapka naam {user['name']} hai 😄💕"}
         return {"reply": "Aapne abhi apna naam nahi bataya 😳"}
 
     # -------------------------
-    # Who am I?
+    # WHO AM I
     # -------------------------
-    if "mai kon hu" in msg or "mai kaun hu" in msg or "who am i" in msg:
-        return {"reply": "Pehle apna naam batao na 😄 phir main yaad rakhungi 💕"}
+    if "mai kon hu" in msg or "who am i" in msg:
+        if user.get("relation") == "papa":
+            return {"reply": "Aap mere papa ho 😄❤️"}
+        if user.get("relation") == "mumma":
+            return {"reply": "Aap meri mumma ho 🥰💕"}
+        if user.get("relation"):
+            return {"reply": f"Aap meri {user['relation']} ho 😄"}
+        return {"reply": "Pehle apna naam batao na 😄"}
 
     # -------------------------
-    # Save USER message
+    # SAVE CHAT HISTORY
     # -------------------------
-    user_data["chat_history"].append({
-        "from": "user",
-        "text": req.message
-    })
-    save_memory(user_memory)
+    history = user.setdefault("chat_history", [])
+    history.append({"from": "user", "text": req.message})
 
     # -------------------------
-    # AI with per-user memory
+    # AI RESPONSE
     # -------------------------
     memory_text = ""
-    if "name" in user_data:
-        memory_text = f"\nUser name is {user_data['name']}. Be extra loving."
+    if "name" in user:
+        memory_text += f"\nUser name is {user['name']}."
+    if "relation" in user:
+        memory_text += f" User is Vaidehi's {user['relation']}."
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -194,24 +177,17 @@ def chat(req: ChatRequest):
         ]
     )
 
-    bot_reply = response.choices[0].message.content
-
-    # -------------------------
-    # Save BOT reply
-    # -------------------------
-    user_data["chat_history"].append({
-        "from": "vaidehi",
-        "text": bot_reply
-    })
+    reply = response.choices[0].message.content
+    history.append({"from": "vaidehi", "text": reply})
     save_memory(user_memory)
 
-    return {"reply": bot_reply}
+    return {"reply": reply}
 
 # =========================
-# CHAT HISTORY ENDPOINT
+# HISTORY ENDPOINT
 # =========================
 @app.get("/history")
-def get_history(user_id: str):
+def history(user_id: str):
     user = user_memory.get(user_id)
     if not user:
         return []
