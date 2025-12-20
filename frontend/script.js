@@ -6,16 +6,32 @@ const typing = document.getElementById("typing");
 const sendSound = new Audio("assets/send.mp3");
 const receiveSound = new Audio("assets/receive.mp3");
 
-// 🔗 BACKEND URL (Render wala)
+// 🔗 BACKEND URL (Render)
 const BACKEND_URL = "https://vaidehi-chatbot-17mp.onrender.com/chat";
-// Local test ke liye:
+// Local test:
 // const BACKEND_URL = "http://127.0.0.1:8000/chat";
 
+// ===============================
+// 👤 WhatsApp-style USER ID
+// ===============================
+let userId = localStorage.getItem("vaidehi_user_id");
+
+if (!userId) {
+  userId = "user_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+  localStorage.setItem("vaidehi_user_id", userId);
+  console.log("New user_id created:", userId);
+} else {
+  console.log("Existing user_id:", userId);
+}
+
+// ===============================
+// 💬 Send Message
+// ===============================
 async function sendMessage() {
   const msg = input.value.trim();
   if (!msg) return;
 
-  // User message show
+  // Show user message
   chat.innerHTML += `
     <div class="user">
       <span>${escapeHTML(msg)}</span>
@@ -35,12 +51,15 @@ async function sendMessage() {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ message: msg })
+      body: JSON.stringify({
+        message: msg,
+        user_id: userId   // ✅ VERY IMPORTANT
+      })
     });
 
     const data = await res.json();
 
-    // Fake typing delay for realism
+    // Fake typing delay
     setTimeout(() => {
       typing.style.display = "none";
 
@@ -54,6 +73,7 @@ async function sendMessage() {
     }, 1200);
 
   } catch (error) {
+    console.error(error);
     typing.style.display = "none";
     chat.innerHTML += `
       <div class="bot">
@@ -63,7 +83,9 @@ async function sendMessage() {
   }
 }
 
-// 🔐 Prevent XSS / HTML injection
+// ===============================
+// 🔐 Prevent XSS
+// ===============================
 function escapeHTML(text) {
   return text
     .replace(/&/g, "&amp;")
@@ -71,10 +93,16 @@ function escapeHTML(text) {
     .replace(/>/g, "&gt;");
 }
 
-// Optional: Auto-focus input on load
+// ===============================
+// ⌨️ UX helpers
+// ===============================
 window.onload = () => {
   input.focus();
 };
 
-
-
+// Enter key support
+input.addEventListener("keypress", function (e) {
+  if (e.key === "Enter") {
+    sendMessage();
+  }
+});
