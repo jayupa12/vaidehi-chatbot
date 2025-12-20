@@ -54,7 +54,6 @@ async function sendMessage() {
   const msg = input.value.trim();
   if (!msg) return;
 
-  // show user message instantly
   chat.innerHTML += `
     <div class="user">
       <span>${escapeHTML(msg)}</span>
@@ -69,12 +68,10 @@ async function sendMessage() {
   try {
     const res = await fetch(`${BACKEND_URL}/chat`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         message: msg,
-        user_id: userId   // ⭐ VERY IMPORTANT
+        user_id: userId
       })
     });
 
@@ -82,7 +79,6 @@ async function sendMessage() {
 
     setTimeout(() => {
       typing.style.display = "none";
-
       chat.innerHTML += `
         <div class="bot">
           <span>${escapeHTML(data.reply)}</span>
@@ -117,7 +113,7 @@ function escapeHTML(text) {
 // ===============================
 window.onload = () => {
   input.focus();
-  loadHistory(); // ⭐ STEP-3 MAGIC
+  loadHistory();
 };
 
 // Enter key support
@@ -126,13 +122,15 @@ input.addEventListener("keypress", function (e) {
     sendMessage();
   }
 });
-function logout() {
+
+// ===============================
+// 🚪 LOGOUT (GLOBAL)
+// ===============================
+window.logout = function () {
   if (!confirm("Logout karna hai? 😢")) return;
 
   localStorage.removeItem("vaidehi_user_id");
   localStorage.removeItem("vaidehi_user_name");
 
   window.location.replace("login.html");
-}
-
-
+};
