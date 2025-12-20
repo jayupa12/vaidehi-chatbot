@@ -6,16 +6,19 @@ const typing = document.getElementById("typing");
 const sendSound = new Audio("assets/send.mp3");
 const receiveSound = new Audio("assets/receive.mp3");
 
-// 🔗 BACKEND BASE URL (NO /chat HERE)
+// 🔗 BACKEND
 const BACKEND_URL = "https://vaidehi-chatbot-17mp.onrender.com";
 
-// 👤 USER INFO
+// 👤 USER (ONLY HERE)
 const userId = localStorage.getItem("vaidehi_user_id");
 const userName = localStorage.getItem("vaidehi_user_name");
 
-// ===============================
-// 📜 LOAD CHAT HISTORY
-// ===============================
+// 🔐 LOGIN CHECK
+if (!userId || !userName) {
+  window.location.replace("login.html");
+}
+
+// 📜 LOAD HISTORY
 async function loadHistory() {
   try {
     const res = await fetch(`${BACKEND_URL}/history?user_id=${userId}`);
@@ -30,14 +33,12 @@ async function loadHistory() {
     });
 
     chat.scrollTop = chat.scrollHeight;
-  } catch (err) {
-    console.error("History load failed", err);
+  } catch (e) {
+    console.error("History error", e);
   }
 }
 
-// ===============================
 // 💬 SEND MESSAGE
-// ===============================
 async function sendMessage() {
   const msg = input.value.trim();
   if (!msg) return;
@@ -65,18 +66,16 @@ async function sendMessage() {
 
     const data = await res.json();
 
-    setTimeout(() => {
-      typing.style.display = "none";
-      chat.innerHTML += `
-        <div class="bot">
-          <span>${escapeHTML(data.reply)}</span>
-        </div>
-      `;
-      chat.scrollTop = chat.scrollHeight;
-      receiveSound.play();
-    }, 700);
+    typing.style.display = "none";
+    chat.innerHTML += `
+      <div class="bot">
+        <span>${escapeHTML(data.reply)}</span>
+      </div>
+    `;
+    chat.scrollTop = chat.scrollHeight;
+    receiveSound.play();
 
-  } catch (error) {
+  } catch (e) {
     typing.style.display = "none";
     chat.innerHTML += `
       <div class="bot">
@@ -86,31 +85,23 @@ async function sendMessage() {
   }
 }
 
-// ===============================
-// 🔐 XSS PROTECTION
-// ===============================
+// 🔐 XSS SAFE
 function escapeHTML(text) {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 
-// ===============================
-// 🚀 INIT
-// ===============================
-if (userId) {
+// 🚀 LOAD
+window.onload = () => {
   input.focus();
   loadHistory();
-}
+};
 
-input.addEventListener("keypress", e => {
+// ⏎ Enter key
+input.addEventListener("keydown", e => {
   if (e.key === "Enter") sendMessage();
 });
 
-// ===============================
 // 🚪 LOGOUT
-// ===============================
 function logout() {
   if (!confirm("Logout karna hai? 😢")) return;
   localStorage.clear();
