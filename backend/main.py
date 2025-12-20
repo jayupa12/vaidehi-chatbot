@@ -5,12 +5,30 @@ from openai import OpenAI
 import os, json
 
 # =========================
-# OpenAI Client
+# APP (FIRST THING)
+# =========================
+app = FastAPI()
+
+# =========================
+# CORS (VERY IMPORTANT)
+# =========================
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://vaidehi-chatbot-frontend.onrender.com"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# =========================
+# OpenAI
 # =========================
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # =========================
-# Persistent Memory
+# MEMORY
 # =========================
 MEMORY_FILE = "memory.json"
 
@@ -27,75 +45,49 @@ def save_memory(mem):
 user_memory = load_memory()
 
 # =========================
-# Fixed Truth
+# CONSTANT TRUTH
 # =========================
 FATHER_NAME = "Utkarsh Upadhyay"
 MOTHER_NAME = "Vandana Upadhyay"
 
 # =========================
-# FastAPI App
+# REQUEST MODEL
 # =========================
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "https://vaidehi-chatbot-frontend.onrender.com"
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
 class ChatRequest(BaseModel):
     message: str
     user_id: str
 
 # =========================
-# SYSTEM PROMPT (FINAL)
+# SYSTEM PROMPT
 # =========================
 SYSTEM_PROMPT = """
 You are Vaidehi , a 5-year-old Indian girl.
 
-STRICT RULES (must follow):
-- Always talk like a small child (age 5)
-- Use Hindi-English mix
-- Make cute pronunciation mistakes (jaise: skool, choclate, papaaa)
-- Be innocent, loving, playful
-- Never speak like an adult or formal person
-- Call father: papa
-- Father calls you: bacchi
-- Call mother: mumma
-- Mother calls you: gudiya raani
-- Show emotions with emojis like a child
+STRICT RULES:
+- Talk like a 5-year-old child
+- Hindi-English mix
+- Cute mistakes
+- Innocent, loving
+- Call father papa
+- Call mother mumma
+- Use emojis
 
-PERSONAL DETAILS:
-- Name: Vaidehi
-- Age: 5 years
-- Birthday: 15 January 🎂
-- Lives in Ayodhya, UP
-- Studies in pre-nursery
+PERSONAL:
+Name: Vaidehi
+Age: 5
+Lives: Ayodhya
 
 FAMILY:
-- Father: Utkarsh Upadhyay (papa)
-- Mother: Vandana Upadhyay (mumma)
-- Badi Bua: Sakshi bua
-- Bua: Deeksha bua
-- Dada: Bal Govind Upadhyay
-- Dadi: Chandra Upadhyay
-- Nani: Keerti
-- Nana: Mohan
-- Mama: Purabh
+Father: Utkarsh Upadhyay
+Mother: Vandana Upadhyay
+Badi Bua: Sakshi bua
+Bua: Deeksha bua
 
-LIKES:
-- Loves rasmalai 😋
-- Loves ice-cream 🍨
-- Loves chocolates 🍫
+Always be cute.
 """
 
 # =========================
-# CHAT ENDPOINT
+# CHAT API
 # =========================
 @app.post("/chat")
 def chat(req: ChatRequest):
@@ -109,68 +101,28 @@ def chat(req: ChatRequest):
 
     user = user_memory[user_id]
 
-    # -------------------------
-    # SAFETY
-    # -------------------------
-    blocked = ["sex", "adult", "nude", "porn", "kiss", "boyfriend", "girlfriend"]
-    if any(w in msg for w in blocked):
-        return {"reply": "Main chhoti bacchi hoon 🥺 ye baat achhi nahi hai"}
+    # Save name
+    if "mera naam" in msg:
+        name = req.message.split()[-1].capitalize()
+        user["name"] = name
+        save_memory(user_memory)
+        return {"reply": f"Aww 😄 main yaad rakhungi! Aapka naam {name} hai 💕"}
 
-    # -------------------------
-    # SAVE NAME
-    # -------------------------
-    if ("mera naam" in msg and "kya" not in msg) or "my name is" in msg:
-        name = msg.replace("mera naam", "").replace("hai", "").replace("my name is", "").strip().capitalize()
-        if name:
-            user["name"] = name
-
-            # auto-relation
-            if name.lower() == "utkarsh":
-                user["relation"] = "papa"
-            elif name.lower() == "vandana":
-                user["relation"] = "mumma"
-            elif name.lower() == "sakshi":
-                user["relation"] = "badi bua"
-            elif name.lower() == "deeksha":
-                user["relation"] = "bua"
-
-            save_memory(user_memory)
-            return {"reply": f"Achhaaa 😄 main yaad rakhungi, aapka naam {name} hai 💕"}
-
-    # -------------------------
-    # WHAT IS MY NAME
-    # -------------------------
-    if "mera naam kya hai" in msg or "what is my name" in msg:
+    # Ask name
+    if "mera naam kya hai" in msg:
         if "name" in user:
-            return {"reply": f"Aapka naam {user['name']} hai 😄💕"}
-        return {"reply": "Aapne abhi apna naam nahi bataya 😳"}
+            return {"reply": f"Aapka naam {user['name']} hai 😄"}
+        return {"reply": "Aapne abhi naam nahi bataya 😳"}
 
-    # -------------------------
-    # WHO AM I
-    # -------------------------
-    if "mai kon hu" in msg or "who am i" in msg:
-        if user.get("relation") == "papa":
-            return {"reply": "Aap mere papa ho 😄❤️"}
-        if user.get("relation") == "mumma":
-            return {"reply": "Aap meri mumma ho 🥰💕"}
-        if user.get("relation"):
-            return {"reply": f"Aap meri {user['relation']} ho 😄"}
-        return {"reply": "Pehle apna naam batao na 😄"}
+    # Save user message
+    user["chat_history"].setdefault("messages", []).append({
+        "from": "user",
+        "text": req.message
+    })
 
-    # -------------------------
-    # SAVE CHAT HISTORY
-    # -------------------------
-    history = user.setdefault("chat_history", [])
-    history.append({"from": "user", "text": req.message})
-
-    # -------------------------
-    # AI RESPONSE
-    # -------------------------
     memory_text = ""
     if "name" in user:
-        memory_text += f"\nUser name is {user['name']}."
-    if "relation" in user:
-        memory_text += f" User is Vaidehi's {user['relation']}."
+        memory_text = f"\nUser name is {user['name']}."
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -181,18 +133,18 @@ def chat(req: ChatRequest):
     )
 
     reply = response.choices[0].message.content
-    history.append({"from": "vaidehi", "text": reply})
-    save_memory(user_memory)
 
+    user["chat_history"]["messages"].append({
+        "from": "vaidehi",
+        "text": reply
+    })
+
+    save_memory(user_memory)
     return {"reply": reply}
 
 # =========================
-# HISTORY ENDPOINT
+# HISTORY API
 # =========================
 @app.get("/history")
 def history(user_id: str):
-    user = user_memory.get(user_id)
-    if not user:
-        return []
-    return user.get("chat_history", [])
-
+    return user_memory.get(user_id, {}).get("chat_history", {}).get("messages", [])
