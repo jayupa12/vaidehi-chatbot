@@ -1,1 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Vaidehi Login</title>
+</head>
+<body>
+
+<h2>Login to Vaidehi 💖</h2>
+
+<input id="name" placeholder="Your Name" /><br><br>
+<input id="mobile" placeholder="Mobile Number" /><br><br>
+
+<button onclick="login()">Login</button>
+
+<script>
+function login() {
+  const name = document.getElementById("name").value.trim();
+  const mobile = document.getElementById("mobile").value.trim();
+
+  if (!name || !mobile) {
+    alert("Name aur mobile dono daalo 😊");
+    return;
+  }
+
+  // SAVE LOGIN INFO
+  localStorage.setItem("vaidehi_user_id", mobile);
+  localStorage.setItem("vaidehi_user_name", name);
+
+  // REDIRECT TO CHAT
+  window.location.href = "index.html";
+}
+</script>
+
+</body>
+</html>
 
