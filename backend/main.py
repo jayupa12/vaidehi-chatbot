@@ -84,7 +84,10 @@ def chat(req: ChatRequest):
 
     # 🧠 Learn user's name
     if "mera naam" in req.message.lower():
-        name = req.message.split()[-1]
+    words = req.message.lower().replace("hai", "").split()
+    if "naam" in words:
+        name_index = words.index("naam") + 1
+        name = words[name_index].capitalize()
         user_memory[user_id] = name
         return {
             "reply": f"Achhaaa 😄 main yaad rakhungi, aapka naam {name} hai 💕"
@@ -112,3 +115,4 @@ def chat(req: ChatRequest):
     )
 
     return {"reply": response.choices[0].message.content}
+
