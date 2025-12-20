@@ -6,12 +6,10 @@ const typing = document.getElementById("typing");
 const sendSound = new Audio("assets/send.mp3");
 const receiveSound = new Audio("assets/receive.mp3");
 
-// 🔗 BACKEND URL
+// 🔗 BACKEND BASE URL (NO /chat HERE)
 const BACKEND_URL = "https://vaidehi-chatbot-17mp.onrender.com";
 
-// ===============================
-// 👤 USER INFO (from login)
-// ===============================
+// 👤 USER INFO
 const userId = localStorage.getItem("vaidehi_user_id");
 const userName = localStorage.getItem("vaidehi_user_name");
 
@@ -20,25 +18,15 @@ const userName = localStorage.getItem("vaidehi_user_name");
 // ===============================
 async function loadHistory() {
   try {
-    const res = await fetch(
-      `${BACKEND_URL}/history?user_id=${userId}`
-    );
+    const res = await fetch(`${BACKEND_URL}/history?user_id=${userId}`);
     const history = await res.json();
 
     history.forEach(msg => {
-      if (msg.from === "user") {
-        chat.innerHTML += `
-          <div class="user">
-            <span>${escapeHTML(msg.text)}</span>
-          </div>
-        `;
-      } else {
-        chat.innerHTML += `
-          <div class="bot">
-            <span>${escapeHTML(msg.text)}</span>
-          </div>
-        `;
-      }
+      chat.innerHTML += `
+        <div class="${msg.from === "user" ? "user" : "bot"}">
+          <span>${escapeHTML(msg.text)}</span>
+        </div>
+      `;
     });
 
     chat.scrollTop = chat.scrollHeight;
@@ -86,7 +74,7 @@ async function sendMessage() {
       `;
       chat.scrollTop = chat.scrollHeight;
       receiveSound.play();
-    }, 800);
+    }, 700);
 
   } catch (error) {
     typing.style.display = "none";
@@ -99,7 +87,7 @@ async function sendMessage() {
 }
 
 // ===============================
-// 🔐 Prevent XSS
+// 🔐 XSS PROTECTION
 // ===============================
 function escapeHTML(text) {
   return text
@@ -109,30 +97,22 @@ function escapeHTML(text) {
 }
 
 // ===============================
-// 🚀 ON PAGE LOAD
+// 🚀 INIT
 // ===============================
-window.onload = () => {
+if (userId) {
   input.focus();
   loadHistory();
-};
+}
 
-// Enter key support
-input.addEventListener("keypress", function (e) {
-  if (e.key === "Enter") {
-    sendMessage();
-  }
+input.addEventListener("keypress", e => {
+  if (e.key === "Enter") sendMessage();
 });
 
 // ===============================
-// 🚪 LOGOUT (GLOBAL)
+// 🚪 LOGOUT
 // ===============================
-window.logout = function () {
+function logout() {
   if (!confirm("Logout karna hai? 😢")) return;
-
-  localStorage.removeItem("vaidehi_user_id");
-  localStorage.removeItem("vaidehi_user_name");
-
+  localStorage.clear();
   window.location.replace("login.html");
-};
-
-
+}
