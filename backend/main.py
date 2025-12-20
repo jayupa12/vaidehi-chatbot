@@ -4,15 +4,30 @@ from pydantic import BaseModel
 from openai import OpenAI
 import os
 
+# OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# 🧠 Simple in-memory user memory
+user_memory = {}
 
 app = FastAPI()
 
-
+# ✅ CORS (frontend allow)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://vaidehi-chatbot-frontend.onrender.com"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class ChatRequest(BaseModel):
     message: str
 
+
+# ✅ EXACT SYSTEM PROMPT (AS YOU WANTED)
 SYSTEM_PROMPT = """
 You are Vaidehi, a 5-year-old Indian girl.
 
@@ -61,41 +76,39 @@ BEHAVIOUR:
 - If topic is unsafe or adult, politely refuse like a child
 - Always sound cute, emotional, loving
 """
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "https://vaidehi-chatbot-frontend.onrender.com"
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
 
 @app.post("/chat")
 def chat(req: ChatRequest):
+    user_id = "default"
 
-    # 🚫 Safety filter (VERY IMPORTANT)
-    blocked = [
-        "sex", "adult", "nude", "porn", "kiss",
-        "boyfriend", "girlfriend"
-    ]
+    # 🧠 Learn user's name
+    if "mera naam" in req.message.lower():
+        name = req.message.split()[-1]
+        user_memory[user_id] = name
+        return {
+            "reply": f"Achhaaa 😄 main yaad rakhungi, aapka naam {name} hai 💕"
+        }
 
+    # 🚫 Child safety filter
+    blocked = ["sex", "adult", "nude", "porn", "kiss", "boyfriend", "girlfriend"]
     if any(word in req.message.lower() for word in blocked):
         return {
             "reply": "Main chhoti bacchi hoon 🥺 ye baat achhi nahi hai"
         }
 
+    # 🧠 Add memory to prompt
+    memory_text = ""
+    if user_id in user_memory:
+        memory_text = f" The user's name is {user_memory[user_id]}. Use it lovingly."
+
     # 🤖 AI response
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": SYSTEM_PROMPT + memory_text},
             {"role": "user", "content": req.message}
         ]
     )
 
     return {"reply": response.choices[0].message.content}
-
-
-
-
