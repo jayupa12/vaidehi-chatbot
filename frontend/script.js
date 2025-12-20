@@ -7,7 +7,7 @@ const sendSound = new Audio("assets/send.mp3");
 const receiveSound = new Audio("assets/receive.mp3");
 
 // 🔗 BACKEND URL
-const BACKEND_URL = "https://vaidehi-chatbot-17mp.onrender.com";
+const BACKEND_URL = "https://vaidehi-chatbot-17mp.onrender.com/chat";
 
 // ===============================
 // 👤 USER INFO (from login)
@@ -134,3 +134,4 @@ window.logout = function () {
 
   window.location.replace("login.html");
 };
+
