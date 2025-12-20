@@ -28,11 +28,18 @@ def save_memory(memory):
 user_memory = load_memory()
 
 # =========================
+# Fixed Parent Truth (RULE)
+# =========================
+PARENT_MAP = {
+    "Utkarsh": "papa",
+    "Vandana": "mummy"
+}
+
+# =========================
 # FastAPI App
 # =========================
 app = FastAPI()
 
-# CORS (frontend allow)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://vaidehi-chatbot-frontend.onrender.com"],
@@ -45,7 +52,7 @@ class ChatRequest(BaseModel):
     message: str
 
 # =========================
-# SYSTEM PROMPT (FINAL)
+# SYSTEM PROMPT
 # =========================
 SYSTEM_PROMPT = """
 You are Vaidehi, a 5-year-old Indian girl.
@@ -61,39 +68,6 @@ STRICT RULES (must follow):
 - Call mother: baba
 - Mother calls you: gudiya raani
 - Show emotions with emojis like a child
-
-PERSONAL DETAILS:
-- Name: Vaidehi
-- Age: 5 years
-- Birthday: 15 January 🎂
-- Lives in Ayodhya, UP
-- Studies in pre-nursery
-
-FAMILY:
-- Father: Utkarsh Upadhyay (papa)
-- Mother: Vandana Upadhyay (called baba)
-- Dada: Bal Govind Upadhyay
-- Dadi: Chandra Upadhyay
-- Bua: Deeksha bua
-- Nani: Keerti
-- Nana: Mohan
-- Mama: Purabh
-
-LIKES & DISLIKES:
-- Loves rasmalai 😋
-- Loves ice-cream 🍨
-- Loves chocolates 🍫
-- Loves paneer paratha 🫓
-- Does NOT like too many sweets
-- Gets very excited on birthday 🎉
-
-BEHAVIOUR:
-- If someone asks about food, answer excitedly like a child
-- If someone asks about birthday, get very happy
-- If someone offers too many sweets, politely refuse like a child
-- If someone says "good morning", reply cutely to papa
-- If topic is unsafe or adult, politely refuse like a child
-- Always sound cute, emotional, loving
 """
 
 # =========================
@@ -111,66 +85,50 @@ def chat(req: ChatRequest):
         return {"reply": "Main chhoti bacchi hoon 🥺 ye baat achhi nahi hai"}
 
     # -------------------------
-    # NAME MEMORY
+    # NAME MEMORY (SMART)
     # -------------------------
-    if "mera naam" in msg:
-        words = msg.replace("hai", "").split()
-        if "naam" in words and words.index("naam") + 1 < len(words):
+    if (("mera naam" in msg and "kya" not in msg) or "my name is" in msg):
+        if "mera naam" in msg:
+            words = msg.replace("hai", "").split()
             name = words[words.index("naam") + 1].capitalize()
-            user_memory["last_user"] = name
-            if name not in user_memory:
-                user_memory[name] = {}
+        else:
+            name = msg.split("my name is")[-1].strip().capitalize()
+
+        user_memory["last_user"] = name
+
+        if name not in user_memory:
+            user_memory[name] = {}
+
+        # ⭐ AUTO PARENT DETECTION
+        if name in PARENT_MAP:
+            role = PARENT_MAP[name]
+            user_memory[name]["relation"] = role
+            user_memory[name]["family"] = {name: role}
             save_memory(user_memory)
-            return {"reply": f"Achhaaa 😄 main yaad rakhungi, aapka naam {name} hai 💕"}
+            return {
+                "reply": f"Ayyyy 😍 Mere {role} {name}! Main aapse bahut pyaar karti hoon 💕"
+            }
+
+        save_memory(user_memory)
+        return {
+            "reply": f"Achhaaa 😄 main yaad rakhungi, aapka naam {name} hai 💕"
+        }
 
     name = user_memory.get("last_user")
 
     # -------------------------
-    # CITY MEMORY
+    # WHO AM I
     # -------------------------
-    if name and ("me rehta" in msg or "me rehti" in msg):
-        parts = msg.split()
-        if len(parts) >= 2:
-            city = parts[1].capitalize()
-            user_memory[name]["city"] = city
-            save_memory(user_memory)
-            return {"reply": f"Aww 😄 {city} bahut accha jagah hai! Main yaad rakhungi 💕"}
+    if name and ("mai kon hu" in msg or "mai kaun hu" in msg or "who am i" in msg):
+        data = user_memory.get(name, {})
+        if "relation" in data:
+            return {
+                "reply": f"Ayyyy 😄 Aap mere {data['relation']} ho, {name} 💕"
+            }
+        return {"reply": f"Aap {name} ho 😄"}
 
     # -------------------------
-    # RELATION (PAPA / FRIEND)
-    # -------------------------
-    if name and "papa bulao" in msg:
-        user_memory[name]["relation"] = "papa"
-        save_memory(user_memory)
-        return {"reply": "Hehehe 😄 theek hai papaaa 💕"}
-
-    if name and "friend bulao" in msg:
-        user_memory[name]["relation"] = "friend"
-        save_memory(user_memory)
-        return {"reply": "Yayyy 😄 hello mere friend 💖"}
-
-    # -------------------------
-    # FAVOURITE FOOD
-    # -------------------------
-    if name and "pasand hai" in msg:
-        food = msg.split()[1]
-        user_memory[name]["food"] = food
-        save_memory(user_memory)
-        return {"reply": f"Yummyyy 😋 mujhe yaad ho gaya, aapko {food} pasand hai 💕"}
-
-    # -------------------------
-    # BIRTHDAY
-    # -------------------------
-    if name and "birthday" in msg:
-        parts = req.message.split()
-        if len(parts) >= 2:
-            date = " ".join(parts[-2:])
-            user_memory[name]["birthday"] = date
-            save_memory(user_memory)
-            return {"reply": f"Yayyy 🎂 main yaad rakhungi! Aapka birthday {date} hai 💖"}
-
-    # -------------------------
-    # FAMILY MEMORY (mummy, papa, bua, nani, dadi, nana, dada, mama)
+    # FAMILY ROLE MEMORY
     # -------------------------
     family_roles = ["mummy", "papa", "bua", "nani", "dadi", "nana", "dada", "mama"]
     for role in family_roles:
@@ -187,12 +145,21 @@ def chat(req: ChatRequest):
 
             user_memory[name]["family"][member_name or role.capitalize()] = role
             save_memory(user_memory)
+
             return {
                 "reply": f"Ayyyy 😍 Meri {member_name or ''} {role}! Main aapko yaad rakhungi 💕"
             }
 
     # -------------------------
-    # INJECT MEMORY INTO AI
+    # WHAT IS MY NAME
+    # -------------------------
+    if name and ("mera naam kya hai" in msg or "what is my name" in msg):
+        return {
+            "reply": f"Aapka naam {name} hai 😄💕"
+        }
+
+    # -------------------------
+    # AI MEMORY INJECTION
     # -------------------------
     memory_text = ""
     if name and name in user_memory:
@@ -204,10 +171,7 @@ def chat(req: ChatRequest):
 
         memory_text = f"""
 User name: {name}
-City: {d.get('city', '')}
 Relation: {d.get('relation', '')}
-Favourite food: {d.get('food', '')}
-Birthday: {d.get('birthday', '')}
 Family: {family_info}
 Use this information naturally and lovingly.
 """
