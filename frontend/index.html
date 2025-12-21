@@ -17,21 +17,25 @@
 <div class="chat-container">
 
   <!-- HEADER -->
-  <div class="header">
+<div class="header">
 
-    <div class="header-left">
-      <img src="assets/dp.jpeg" class="dp" alt="Vaidehi">
-      <div class="header-text">
-        <div class="name">Vaidehi 🧸</div>
-        <div class="status">
-          <span class="dot"></span> online
-        </div>
+  <div class="header-left">
+    <img src="assets/dp.jpeg" class="dp" alt="Vaidehi">
+    <div class="header-text">
+      <div class="name">Vaidehi 🧸</div>
+      <div class="status">
+        <span class="dot"></span> online
       </div>
     </div>
-
-    <button class="logout-btn" onclick="logout()">Logout</button>
-
   </div>
+
+  <div class="header-actions">
+    <button class="call-btn" onclick="toggleCall()">📞</button>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+
+</div>
+
 
   <!-- CHAT BOX -->
   <div id="chat-box"></div>
@@ -63,3 +67,4 @@
 <script src="script.js"></script>
 </body>
 </html>
+
