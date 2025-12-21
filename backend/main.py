@@ -16,14 +16,16 @@ app = FastAPI()
 # =========================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://vaidehi-chatbot-frontend.onrender.com"],
+    allow_origins=[
+        "https://vaidehi-chatbot-frontend.onrender.com"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # =========================
-# KEYS
+# KEYS (Render ENV)
 # =========================
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 ELEVEN_KEY = os.getenv("ELEVENLABS_API_KEY")
@@ -32,7 +34,7 @@ VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID")
 client = OpenAI(api_key=OPENAI_KEY)
 
 # =========================
-# MEMORY
+# MEMORY (JSON)
 # =========================
 MEMORY_FILE = "memory.json"
 
@@ -123,9 +125,9 @@ Always sound cute and emotional.
 # =========================
 def detect_emotion(text: str) -> str:
     t = text.lower()
-    if any(w in t for w in ["hehe", "haha", "ice", "chocolate", "mumma"]):
+    if any(w in t for w in ["hehe", "haha", "😄", "😂", "ice", "icecream", "chocolate", "mumma"]):
         return "giggle"
-    if any(w in t for w in ["nahi", "ro", "cry", "gussa"]):
+    if any(w in t for w in ["nahi", "ro", "cry", "sad", "gussa", "daant"]):
         return "cry"
     return "normal"
 
@@ -144,14 +146,16 @@ def elevenlabs_tts(text: str) -> str:
         "text": text,
         "model_id": "eleven_multilingual_v2",
         "voice_settings": {
-            "stability": 0.35,
-            "similarity_boost": 0.85,
-            "style": 0.9,
+            "stability": 0.30,          # softer
+            "similarity_boost": 0.85,   # child consistency
+            "style": 0.9,               # expressive
             "use_speaker_boost": True
         }
     }
 
-    r = requests.post(url, json=payload, headers=headers)
+    r = requests.post(url, json=payload, headers=headers, timeout=30)
+    r.raise_for_status()
+
     with open(audio_file, "wb") as f:
         f.write(r.content)
 
@@ -169,7 +173,7 @@ def chat(req: ChatRequest):
 
     user = user_memory[user_id]
 
-    # save user msg
+    # save user message
     user["chat_history"].append({
         "from": "user",
         "text": req.message
@@ -186,14 +190,14 @@ def chat(req: ChatRequest):
     reply = response.choices[0].message.content
     emotion = detect_emotion(reply)
 
-    # save bot msg
+    # save bot message
     user["chat_history"].append({
         "from": "vaidehi",
         "text": reply
     })
     save_memory(user_memory)
 
-    # TTS
+    # 🔊 ElevenLabs Voice
     audio_file = elevenlabs_tts(reply)
 
     return {
@@ -210,7 +214,7 @@ def audio(filename: str):
     return FileResponse(filename, media_type="audio/mpeg")
 
 # =========================
-# HISTORY
+# CHAT HISTORY
 # =========================
 @app.get("/history")
 def history(user_id: str):
