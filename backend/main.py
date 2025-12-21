@@ -1,9 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from openai import OpenAI
-import os, json, uuid
+import os, json
 
 # =========================
 # APP
@@ -24,12 +23,12 @@ app.add_middleware(
 )
 
 # =========================
-# OpenAI
+# OpenAI Client
 # =========================
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # =========================
-# MEMORY
+# MEMORY (JSON)
 # =========================
 MEMORY_FILE = "memory.json"
 
@@ -121,7 +120,7 @@ def chat(req: ChatRequest):
     user_id = req.user_id
     msg_lower = req.message.lower()
 
-    # create memory
+    # create memory for new user
     if user_id not in user_memory:
         user_memory[user_id] = {
             "chat_history": []
@@ -130,10 +129,17 @@ def chat(req: ChatRequest):
     user = user_memory[user_id]
 
     # -------------------------
-    # SAVE NAME
+    # SAVE USER NAME
     # -------------------------
-    if "mera naam" in msg_lower:
-        name = req.message.replace("mera naam", "").replace("hai", "").strip().capitalize()
+    if "mera naam" in msg_lower and "kya" not in msg_lower:
+        name = (
+            req.message
+            .lower()
+            .replace("mera naam", "")
+            .replace("hai", "")
+            .strip()
+            .capitalize()
+        )
         if name:
             user["name"] = name
             save_memory(user_memory)
@@ -177,46 +183,23 @@ def chat(req: ChatRequest):
 
     reply = response.choices[0].message.content
 
-    # save bot message
+    # -------------------------
+    # SAVE BOT MESSAGE
+    # -------------------------
     user["chat_history"].append({
         "from": "vaidehi",
         "text": reply
     })
 
-    # -------------------------
-    # 🔊 TEXT → SPEECH (FIXED)
-    # -------------------------
-    audio_file = f"vaidehi_{uuid.uuid4()}.mp3"
-
-    speech = client.audio.speech.create(
-    model="gpt-4o-mini-tts",
-    voice="verse",        # alloy ❌ → verse ✅ (softer)
-    input=reply,
-    format="mp3",
-    speed=0.85,           # thoda slow = cute
-)
-
-    # ✅ CORRECT WAY
-    speech.stream_to_file(audio_file)
-
     save_memory(user_memory)
 
     return {
-        "reply": reply,
-        "audio": audio_file
+        "reply": reply
     }
 
 # =========================
-# AUDIO FILE SERVE
-# =========================
-@app.get("/audio/{filename}")
-def get_audio(filename: str):
-    return FileResponse(filename, media_type="audio/mpeg")
-
-# =========================
-# CHAT HISTORY
+# CHAT HISTORY API
 # =========================
 @app.get("/history")
 def history(user_id: str):
     return user_memory.get(user_id, {}).get("chat_history", [])
-
