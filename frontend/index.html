@@ -36,18 +36,26 @@
   <!-- CHAT BOX -->
   <div id="chat-box"></div>
 
-  <!-- TYPING -->
+  <!-- TYPING / MIC STATUS -->
   <div id="typing" class="typing">Vaidehi is typing…</div>
 
-  <!-- INPUT -->
+  <!-- INPUT AREA -->
   <div class="input-area">
+
+    <!-- TEXT INPUT -->
     <input
       id="message"
       type="text"
-      placeholder="Type a message…"
+      placeholder="Type or speak…"
       onkeydown="if(event.key==='Enter') sendMessage()"
     />
-    <button onclick="sendMessage()">➤</button>
+
+    <!-- SEND BUTTON -->
+    <button class="send-btn" onclick="sendMessage()">➤</button>
+
+    <!-- 🎤 MIC BUTTON (CALL VAIDEHI) -->
+    <button class="mic-btn" onclick="startListening()">🎤</button>
+
   </div>
 
 </div>
