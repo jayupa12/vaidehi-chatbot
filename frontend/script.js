@@ -12,18 +12,6 @@ const sendSound = new Audio("assets/send.mp3");
 const receiveSound = new Audio("assets/receive.mp3");
 
 // ===============================
-// 🔊 PLAY AI VOICE (BACCHI)
-// ===============================
-function playVoice(audioFile) {
-  if (!audioFile) return;
-
-  const audio = new Audio(`${BACKEND_URL}/audio/${audioFile}`);
-  audio.play().catch(err => {
-    console.log("AI voice blocked", err);
-  });
-}
-
-// ===============================
 // 📜 LOAD CHAT HISTORY
 // ===============================
 async function loadHistory() {
@@ -81,16 +69,9 @@ async function sendMessage() {
       </div>`;
     chat.scrollTop = chat.scrollHeight;
 
-    // 🔊 RECEIVE SOUND (FIRST)
+    // 🔊 RECEIVE SOUND
     receiveSound.currentTime = 0;
     receiveSound.play().catch(() => {});
-
-    // 🔊 AI VOICE (AFTER RECEIVE SOUND)
-    if (data.audio) {
-      setTimeout(() => {
-        playVoice(data.audio);
-      }, 400); // slight delay for natural feel
-    }
 
   } catch (err) {
     typing.style.display = "none";
