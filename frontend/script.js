@@ -24,7 +24,7 @@ let callActive = false;
 
 if (SpeechRecognition) {
   recognition = new SpeechRecognition();
-  recognition.lang = "hi-IN";          // Hindi + English
+  recognition.lang = "hi-IN";
   recognition.interimResults = false;
   recognition.continuous = true;
 }
@@ -49,6 +49,18 @@ function shouldCry(text) {
     "chup", "bad"
   ];
   return words.some(w => text.toLowerCase().includes(w));
+}
+
+// ===============================
+// 🔊 PLAY ELEVENLABS VOICE
+// ===============================
+function playVaidehiVoice(audioFile) {
+  if (!audioFile) return;
+
+  const voice = new Audio(`${BACKEND_URL}/audio/${audioFile}`);
+  voice.play().catch(err => {
+    console.log("Voice autoplay blocked", err);
+  });
 }
 
 // ===============================
@@ -90,7 +102,6 @@ async function sendMessage() {
   typing.style.display = "block";
   typing.innerText = "Vaidehi is typing…";
 
-  // 🔊 SEND SOUND
   sendSound.currentTime = 0;
   sendSound.play().catch(() => {});
 
@@ -111,21 +122,30 @@ async function sendMessage() {
       </div>`;
     chat.scrollTop = chat.scrollHeight;
 
-    // 🔔 RECEIVE SOUND FIRST
+    // 🔔 RECEIVE SOUND
     receiveSound.currentTime = 0;
     receiveSound.play().catch(() => {});
 
-    // reset handler
+    // CLEAR OLD HANDLER
     receiveSound.onended = null;
 
-    // 🤭😢 PLAY EMOTION AFTER RECEIVE
+    // AFTER RECEIVE → EMOTION → VOICE
     receiveSound.onended = () => {
+
       if (shouldCry(data.reply)) {
         crySound.currentTime = 0;
         crySound.play().catch(() => {});
-      } else if (shouldGiggle(data.reply)) {
+      }
+      else if (shouldGiggle(data.reply)) {
         giggleSound.currentTime = 0;
         giggleSound.play().catch(() => {});
+      }
+
+      // 🎤 ELEVENLABS BACCHI VOICE (LAST)
+      if (data.audio) {
+        setTimeout(() => {
+          playVaidehiVoice(data.audio);
+        }, 300);
       }
     };
 
@@ -136,7 +156,7 @@ async function sendMessage() {
 }
 
 // ===============================
-// 📞 CALL TOGGLE (HEADER BUTTON)
+// 📞 CALL TOGGLE
 // ===============================
 function toggleCall() {
   const btn = document.querySelector(".call-btn");
@@ -147,7 +167,6 @@ function toggleCall() {
   }
 
   if (!callActive) {
-    // ▶ START CALL
     callActive = true;
     btn.classList.add("active");
     btn.innerText = "📴";
@@ -165,9 +184,7 @@ function toggleCall() {
       sendMessage();
     };
 
-    recognition.onerror = () => {
-      stopCall();
-    };
+    recognition.onerror = stopCall;
 
   } else {
     stopCall();
@@ -179,7 +196,6 @@ function toggleCall() {
 // ===============================
 function stopCall() {
   callActive = false;
-
   if (recognition) recognition.stop();
 
   const btn = document.querySelector(".call-btn");
