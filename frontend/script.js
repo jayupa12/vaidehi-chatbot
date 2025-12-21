@@ -11,6 +11,65 @@ const userId = localStorage.getItem("vaidehi_user_id");
 const sendSound = new Audio("assets/send.mp3");
 const receiveSound = new Audio("assets/receive.mp3");
 
+// reactions
+const giggleSound = new Audio("assets/giggling.mp3");
+const crySound = new Audio("assets/crying.mp3");
+
+// ===============================
+// 🎤 BACCHI VOICE (Browser TTS)
+// ===============================
+function speakLikeVaidehi(text) {
+  if (!window.speechSynthesis) return;
+
+  speechSynthesis.cancel(); // stop previous
+
+  const utter = new SpeechSynthesisUtterance(text);
+
+  const voices = speechSynthesis.getVoices();
+  const softGirl = voices.find(v =>
+    v.name.toLowerCase().includes("female") ||
+    v.name.toLowerCase().includes("girl")
+  );
+
+  if (softGirl) utter.voice = softGirl;
+
+  utter.rate = 0.85;   // slow = cute
+  utter.pitch = 1.4;  // high pitch = bacchi
+  utter.volume = 1;
+
+  speechSynthesis.speak(utter);
+}
+
+// ===============================
+// 🤭😢 REACTION LOGIC
+// ===============================
+function shouldGiggle(text) {
+  const words = [
+    "haha", "hehe", "😂", "😄",
+    "ice", "icecream", "chocolate",
+    "mummy", "mum", "maa"
+  ];
+  return words.some(w => text.toLowerCase().includes(w));
+}
+
+function shouldCry(text) {
+  const words = [
+    "cry", "ro", "sad", "daant",
+    "gussa", "nahi", "maar"
+  ];
+  return words.some(w => text.toLowerCase().includes(w));
+}
+
+function playGiggle() {
+  giggleSound.currentTime = 0;
+  giggleSound.play().catch(() => {});
+}
+
+function playCry() {
+  crySound.currentTime = 0;
+  crySound.play().catch(() => {});
+}
+
 // ===============================
 // 📜 LOAD CHAT HISTORY
 // ===============================
@@ -72,6 +131,18 @@ async function sendMessage() {
     // 🔊 RECEIVE SOUND
     receiveSound.currentTime = 0;
     receiveSound.play().catch(() => {});
+
+    // 🤭 / 😢 reaction first
+    if (shouldCry(data.reply)) {
+      setTimeout(playCry, 300);
+    } else if (shouldGiggle(data.reply)) {
+      setTimeout(playGiggle, 300);
+    }
+
+    // 🎤 bacchi voice
+    setTimeout(() => {
+      speakLikeVaidehi(data.reply);
+    }, 700);
 
   } catch (err) {
     typing.style.display = "none";
