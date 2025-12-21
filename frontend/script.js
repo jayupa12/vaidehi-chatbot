@@ -91,12 +91,12 @@ async function sendMessage() {
       </div>`;
     chat.scrollTop = chat.scrollHeight;
 
-    // 🔊 RECEIVE SOUND (FIRST)
+    // 🔔 RECEIVE SOUND (FIRST)
     receiveSound.currentTime = 0;
     receiveSound.play().catch(() => {});
 
-    // 🤭 / 😢 REACTION AFTER RECEIVE SOUND
-    setTimeout(() => {
+    // 🤭😢 AFTER RECEIVE SOUND FINISHES
+    receiveSound.onended = () => {
       if (shouldCry(data.reply)) {
         crySound.currentTime = 0;
         crySound.play().catch(() => {});
@@ -104,7 +104,7 @@ async function sendMessage() {
         giggleSound.currentTime = 0;
         giggleSound.play().catch(() => {});
       }
-    }, 350); // receive ke baad hi
+    };
 
   } catch (err) {
     typing.style.display = "none";
