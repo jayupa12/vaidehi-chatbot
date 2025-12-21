@@ -16,34 +16,37 @@
 
 <div class="chat-container">
 
-  <!-- HEADER -->
-<div class="header">
+  <!-- ================= HEADER ================= -->
+  <div class="header">
 
-  <div class="header-left">
-    <img src="assets/dp.jpeg" class="dp" alt="Vaidehi">
-    <div class="header-text">
-      <div class="name">Vaidehi 🧸</div>
-      <div class="status">
-        <span class="dot"></span> online
+    <div class="header-left">
+      <img src="assets/dp.jpeg" class="dp" alt="Vaidehi" />
+      <div class="header-text">
+        <div class="name">Vaidehi 🧸</div>
+        <div class="status">
+          <span class="dot"></span> online
+        </div>
       </div>
     </div>
+
+    <!-- ACTION BUTTONS -->
+    <div class="header-actions">
+      <!-- 📞 CALL BUTTON -->
+      <button class="call-btn" onclick="toggleCall()" title="Call Vaidehi">📞</button>
+
+      <!-- 🚪 LOGOUT -->
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
   </div>
 
-  <div class="header-actions">
-    <button class="call-btn" onclick="toggleCall()">📞</button>
-    <button class="logout-btn" onclick="logout()">Logout</button>
-  </div>
-
-</div>
-
-
-  <!-- CHAT BOX -->
+  <!-- ================= CHAT BOX ================= -->
   <div id="chat-box"></div>
 
-  <!-- TYPING / MIC STATUS -->
+  <!-- ================= TYPING / MIC STATUS ================= -->
   <div id="typing" class="typing">Vaidehi is typing…</div>
 
-  <!-- INPUT AREA -->
+  <!-- ================= INPUT AREA ================= -->
   <div class="input-area">
 
     <!-- TEXT INPUT -->
@@ -57,14 +60,11 @@
     <!-- SEND BUTTON -->
     <button class="send-btn" onclick="sendMessage()">➤</button>
 
-    <!-- 🎤 MIC BUTTON (CALL VAIDEHI) -->
-    <button class="mic-btn" onclick="startListening()">🎤</button>
-
   </div>
 
 </div>
 
+<!-- MAIN SCRIPT -->
 <script src="script.js"></script>
 </body>
 </html>
-
