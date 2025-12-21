@@ -18,8 +18,9 @@ const crySound = new Audio("assets/crying.mp3");
 // ===============================
 function shouldGiggle(text) {
   const words = [
-    "haha", "hehe", "😄", "😂",
-    "ice", "icecream", "chocolate",
+    "haha", "hehe", "😂", "😄",
+    "ice", "icecream", "ice-cream",
+    "chocolate", "choclate",
     "mummy", "mum", "maa"
   ];
   return words.some(w => text.toLowerCase().includes(w));
@@ -28,7 +29,8 @@ function shouldGiggle(text) {
 function shouldCry(text) {
   const words = [
     "ro", "cry", "sad", "daant",
-    "gussa", "nahi", "maar"
+    "gussa", "nahi", "maar",
+    "chup", "bad"
   ];
   return words.some(w => text.toLowerCase().includes(w));
 }
@@ -37,17 +39,21 @@ function shouldCry(text) {
 // 📜 LOAD CHAT HISTORY
 // ===============================
 async function loadHistory() {
-  const res = await fetch(`${BACKEND_URL}/history?user_id=${userId}`);
-  const data = await res.json();
+  try {
+    const res = await fetch(`${BACKEND_URL}/history?user_id=${userId}`);
+    const data = await res.json();
 
-  data.forEach(m => {
-    chat.innerHTML += `
-      <div class="${m.from === "user" ? "user" : "bot"}">
-        <span>${escapeHTML(m.text)}</span>
-      </div>`;
-  });
+    data.forEach(m => {
+      chat.innerHTML += `
+        <div class="${m.from === "user" ? "user" : "bot"}">
+          <span>${escapeHTML(m.text)}</span>
+        </div>`;
+    });
 
-  chat.scrollTop = chat.scrollHeight;
+    chat.scrollTop = chat.scrollHeight;
+  } catch (e) {
+    console.error("History load failed", e);
+  }
 }
 
 // ===============================
@@ -91,16 +97,20 @@ async function sendMessage() {
       </div>`;
     chat.scrollTop = chat.scrollHeight;
 
-    // 🔔 RECEIVE SOUND (FIRST)
+    // 🔔 RECEIVE SOUND FIRST
     receiveSound.currentTime = 0;
     receiveSound.play().catch(() => {});
 
-    // 🤭😢 AFTER RECEIVE SOUND FINISHES
+    // 🧠 CLEAR OLD HANDLER (IMPORTANT)
+    receiveSound.onended = null;
+
+    // 🤭😢 PLAY EMOTION AFTER RECEIVE
     receiveSound.onended = () => {
       if (shouldCry(data.reply)) {
         crySound.currentTime = 0;
         crySound.play().catch(() => {});
-      } else if (shouldGiggle(data.reply)) {
+      } 
+      else if (shouldGiggle(data.reply)) {
         giggleSound.currentTime = 0;
         giggleSound.play().catch(() => {});
       }
