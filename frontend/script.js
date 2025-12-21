@@ -14,6 +14,21 @@ const giggleSound = new Audio("assets/giggling.mp3");
 const crySound = new Audio("assets/crying.mp3");
 
 // ===============================
+// 🎤 SPEECH RECOGNITION (CALL)
+// ===============================
+const SpeechRecognition =
+  window.SpeechRecognition || window.webkitSpeechRecognition;
+
+let recognition = null;
+
+if (SpeechRecognition) {
+  recognition = new SpeechRecognition();
+  recognition.lang = "hi-IN";          // Hindi + English mix
+  recognition.interimResults = false;
+  recognition.continuous = false;
+}
+
+// ===============================
 // 🤭😢 REACTION RULES
 // ===============================
 function shouldGiggle(text) {
@@ -72,6 +87,7 @@ async function sendMessage() {
 
   input.value = "";
   typing.style.display = "block";
+  typing.innerText = "Vaidehi is typing…";
 
   // 🔊 SEND SOUND
   sendSound.currentTime = 0;
@@ -101,10 +117,10 @@ async function sendMessage() {
     receiveSound.currentTime = 0;
     receiveSound.play().catch(() => {});
 
-    // 🧠 CLEAR OLD HANDLER (IMPORTANT)
+    // 🧠 CLEAR OLD HANDLER
     receiveSound.onended = null;
 
-    // 🤭😢 PLAY EMOTION AFTER RECEIVE
+    // 🤭😢 EMOTION AFTER RECEIVE
     receiveSound.onended = () => {
       if (shouldCry(data.reply)) {
         crySound.currentTime = 0;
@@ -120,6 +136,34 @@ async function sendMessage() {
     typing.style.display = "none";
     console.error("Message send failed", err);
   }
+}
+
+// ===============================
+// 🎤 CALL VAIDEHI (MIC → TALK)
+// ===============================
+function startListening() {
+  if (!recognition) {
+    alert("Mic support nahi hai is browser me 😢");
+    return;
+  }
+
+  typing.style.display = "block";
+  typing.innerText = "🎤 Vaidehi sun rahi hai…";
+
+  recognition.start();
+
+  recognition.onresult = (event) => {
+    const speechText = event.results[0][0].transcript;
+    typing.style.display = "none";
+
+    input.value = speechText;
+    sendMessage();
+  };
+
+  recognition.onerror = () => {
+    typing.style.display = "none";
+    alert("Mic me problem aa gayi 😢");
+  };
 }
 
 // ===============================
