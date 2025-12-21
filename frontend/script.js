@@ -20,12 +20,13 @@ const SpeechRecognition =
   window.SpeechRecognition || window.webkitSpeechRecognition;
 
 let recognition = null;
+let callActive = false;
 
 if (SpeechRecognition) {
   recognition = new SpeechRecognition();
-  recognition.lang = "hi-IN";          // Hindi + English mix
+  recognition.lang = "hi-IN";
   recognition.interimResults = false;
-  recognition.continuous = false;
+  recognition.continuous = true;
 }
 
 // ===============================
@@ -89,7 +90,6 @@ async function sendMessage() {
   typing.style.display = "block";
   typing.innerText = "Vaidehi is typing…";
 
-  // 🔊 SEND SOUND
   sendSound.currentTime = 0;
   sendSound.play().catch(() => {});
 
@@ -97,10 +97,7 @@ async function sendMessage() {
     const res = await fetch(`${BACKEND_URL}/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: msg,
-        user_id: userId
-      })
+      body: JSON.stringify({ message: msg, user_id: userId })
     });
 
     const data = await res.json();
@@ -117,16 +114,11 @@ async function sendMessage() {
     receiveSound.currentTime = 0;
     receiveSound.play().catch(() => {});
 
-    // 🧠 CLEAR OLD HANDLER
-    receiveSound.onended = null;
-
-    // 🤭😢 EMOTION AFTER RECEIVE
     receiveSound.onended = () => {
       if (shouldCry(data.reply)) {
         crySound.currentTime = 0;
         crySound.play().catch(() => {});
-      } 
-      else if (shouldGiggle(data.reply)) {
+      } else if (shouldGiggle(data.reply)) {
         giggleSound.currentTime = 0;
         giggleSound.play().catch(() => {});
       }
@@ -139,31 +131,59 @@ async function sendMessage() {
 }
 
 // ===============================
-// 🎤 CALL VAIDEHI (MIC → TALK)
+// 📞 CALL TOGGLE (HEADER BUTTON)
 // ===============================
-function startListening() {
+function toggleCall() {
+  const btn = document.querySelector(".call-btn");
+
   if (!recognition) {
-    alert("Mic support nahi hai is browser me 😢");
+    alert("Mic support nahi hai 😢");
     return;
   }
 
-  typing.style.display = "block";
-  typing.innerText = "🎤 Vaidehi sun rahi hai…";
+  if (!callActive) {
+    // START CALL
+    callActive = true;
+    btn.classList.add("active");
+    btn.innerText = "📴";
 
-  recognition.start();
+    typing.style.display = "block";
+    typing.innerText = "📞 Call connected… Vaidehi sun rahi hai";
 
-  recognition.onresult = (event) => {
-    const speechText = event.results[0][0].transcript;
-    typing.style.display = "none";
+    recognition.start();
 
-    input.value = speechText;
-    sendMessage();
-  };
+    recognition.onresult = (event) => {
+      const last = event.results.length - 1;
+      const speechText = event.results[last][0].transcript;
 
-  recognition.onerror = () => {
-    typing.style.display = "none";
-    alert("Mic me problem aa gayi 😢");
-  };
+      input.value = speechText;
+      sendMessage();
+    };
+
+    recognition.onerror = () => {
+      stopCall();
+    };
+
+  } else {
+    stopCall();
+  }
+}
+
+// ===============================
+// ❌ END CALL
+// ===============================
+function stopCall() {
+  callActive = false;
+  if (recognition) recognition.stop();
+
+  const btn = document.querySelector(".call-btn");
+  if (btn) {
+    btn.classList.remove("active");
+    btn.innerText = "📞";
+  }
+
+  typing.style.display = "none";
+  input.value = "";
 }
 
 // ===============================
