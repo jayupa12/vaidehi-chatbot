@@ -24,7 +24,7 @@ let callActive = false;
 
 if (SpeechRecognition) {
   recognition = new SpeechRecognition();
-  recognition.lang = "hi-IN";
+  recognition.lang = "hi-IN";          // Hindi + English
   recognition.interimResults = false;
   recognition.continuous = true;
 }
@@ -90,6 +90,7 @@ async function sendMessage() {
   typing.style.display = "block";
   typing.innerText = "Vaidehi is typing…";
 
+  // 🔊 SEND SOUND
   sendSound.currentTime = 0;
   sendSound.play().catch(() => {});
 
@@ -114,6 +115,10 @@ async function sendMessage() {
     receiveSound.currentTime = 0;
     receiveSound.play().catch(() => {});
 
+    // reset handler
+    receiveSound.onended = null;
+
+    // 🤭😢 PLAY EMOTION AFTER RECEIVE
     receiveSound.onended = () => {
       if (shouldCry(data.reply)) {
         crySound.currentTime = 0;
@@ -142,7 +147,7 @@ function toggleCall() {
   }
 
   if (!callActive) {
-    // START CALL
+    // ▶ START CALL
     callActive = true;
     btn.classList.add("active");
     btn.innerText = "📴";
@@ -174,6 +179,7 @@ function toggleCall() {
 // ===============================
 function stopCall() {
   callActive = false;
+
   if (recognition) recognition.stop();
 
   const btn = document.querySelector(".call-btn");
