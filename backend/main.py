@@ -34,7 +34,7 @@ VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID")
 client = OpenAI(api_key=OPENAI_KEY)
 
 # =========================
-# MEMORY (JSON)
+# MEMORY (JSON FILE)
 # =========================
 MEMORY_FILE = "memory.json"
 
@@ -82,42 +82,23 @@ Father: Utkarsh Upadhyay
 Mother: Vandana Upadhyay
 Badi Bua: Sakshi bua
 Bua: Deeksha bua
-nana: shri mohan bhardwaj
-nani: shrimati keerti bhardwaj
-mama: Purab mama
-dada: shri balgovind Upadhyay
-dadi: shrimati chandra Upadhyay
-
+Nana: Mohan
+Nani: Keerti
+Mama: Purab
+Dada: Bal Govind Upadhyay
+Dadi: Chandra Upadhyay
 
 LIKES:
 Ice-cream 🍨
 Chocolates 🍫
 Rasmalai 😋
 
-nature:
-no patience
-thodi ziddi
-love hidenseek games 
+NATURE:
+Thodi ziddi
+No patience
+Loves hide and seek
 
-mother occupation/lookslikes/dislikes:
-slim,short height,big hairs,little darkcircles,sometime she cry after arguning with papa,caring
-she is nurse ,work in a hospital
-she love to eat tamatar ki chatni,rice,pulses
-she love to eat rasmalai in sweets and chocolate and she love to eat milk powder
-she love to eat bhaji
-she is from Baloda bazar,chattisgarh(Vaidehi's nani ka ghar)
-
-
-father occupation/likes/dislikes
-work in a office
-tall,handome ,cute,bodybuilder
-always on diet,love to eat paneer soya chunks
-
-
-
-Always sound cute and emotional.
-
-
+Always sound cute, emotional and loving.
 """
 
 # =========================
@@ -125,7 +106,7 @@ Always sound cute and emotional.
 # =========================
 def detect_emotion(text: str) -> str:
     t = text.lower()
-    if any(w in t for w in ["hehe", "haha", "😄", "😂", "ice", "icecream", "chocolate", "mumma"]):
+    if any(w in t for w in ["hehe", "haha", "😂", "😄", "ice", "icecream", "chocolate", "mumma"]):
         return "giggle"
     if any(w in t for w in ["nahi", "ro", "cry", "sad", "gussa", "daant"]):
         return "cry"
@@ -142,22 +123,23 @@ def elevenlabs_tts(text: str) -> str:
         "xi-api-key": ELEVEN_KEY,
         "Content-Type": "application/json"
     }
+
     payload = {
         "text": text,
         "model_id": "eleven_multilingual_v2",
         "voice_settings": {
-            "stability": 0.30,          # softer
-            "similarity_boost": 0.85,   # child consistency
+            "stability": 0.30,          # soft child tone
+            "similarity_boost": 0.85,   # voice consistency
             "style": 0.9,               # expressive
             "use_speaker_boost": True
         }
     }
 
-    r = requests.post(url, json=payload, headers=headers, timeout=30)
-    r.raise_for_status()
+    response = requests.post(url, json=payload, headers=headers, timeout=30)
+    response.raise_for_status()
 
     with open(audio_file, "wb") as f:
-        f.write(r.content)
+        f.write(response.content)
 
     return audio_file
 
@@ -173,12 +155,13 @@ def chat(req: ChatRequest):
 
     user = user_memory[user_id]
 
-    # save user message
+    # Save user message
     user["chat_history"].append({
         "from": "user",
         "text": req.message
     })
 
+    # GPT reply
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
@@ -190,14 +173,14 @@ def chat(req: ChatRequest):
     reply = response.choices[0].message.content
     emotion = detect_emotion(reply)
 
-    # save bot message
+    # Save bot message
     user["chat_history"].append({
         "from": "vaidehi",
         "text": reply
     })
     save_memory(user_memory)
 
-    # 🔊 ElevenLabs Voice
+    # ElevenLabs voice
     audio_file = elevenlabs_tts(reply)
 
     return {
