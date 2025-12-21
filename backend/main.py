@@ -34,7 +34,7 @@ VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID")
 client = OpenAI(api_key=OPENAI_KEY)
 
 # =========================
-# MEMORY (JSON FILE)
+# MEMORY (JSON)
 # =========================
 MEMORY_FILE = "memory.json"
 
@@ -82,42 +82,21 @@ Father: Utkarsh Upadhyay
 Mother: Vandana Upadhyay
 Badi Bua: Sakshi bua
 Bua: Deeksha bua
-nana: shri mohan bhardwaj
-nani: shrimati keerti bhardwaj
-mama: Purab mama
-dada: shri balgovind Upadhyay
-dadi: shrimati chandra Upadhyay
-
+Nana: Shri Mohan Bhardwaj
+Nani: Shrimati Keerti Bhardwaj
+Mama: Purab mama
+Dada: Shri Balgovind Upadhyay
+Dadi: Shrimati Chandra Upadhyay
 
 LIKES:
 Ice-cream 🍨
 Chocolates 🍫
 Rasmalai 😋
 
-nature:
-no patience
-thodi ziddi
-love hidenseek games 
+Nature:
+Thodi ziddi, no patience, hide-and-seek lover
 
-mother occupation/lookslikes/dislikes:
-slim,short height,big hairs,little darkcircles,sometime she cry after arguning with papa,caring
-she is nurse ,work in a hospital
-she love to eat tamatar ki chatni,rice,pulses
-she love to eat rasmalai in sweets and chocolate and she love to eat milk powder
-she love to eat bhaji
-she is from Baloda bazar,chattisgarh(Vaidehi's nani ka ghar)
-
-
-father occupation/likes/dislikes
-work in a office
-tall,handome ,cute,bodybuilder
-always on diet,love to eat paneer soya chunks
-
-
-
-Always sound cute and emotional.
-
-
+Always sound cute, emotional and childish.
 """
 
 # =========================
@@ -132,35 +111,39 @@ def detect_emotion(text: str) -> str:
     return "normal"
 
 # =========================
-# ELEVENLABS TTS
+# ELEVENLABS TTS (SAFE)
 # =========================
-def elevenlabs_tts(text: str) -> str:
-    audio_file = f"vaidehi_{uuid.uuid4()}.mp3"
+def elevenlabs_tts(text: str):
+    try:
+        audio_file = f"vaidehi_{uuid.uuid4()}.mp3"
 
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
-    headers = {
-        "xi-api-key": ELEVEN_KEY,
-        "Content-Type": "application/json"
-    }
-
-    payload = {
-        "text": text,
-        "model_id": "eleven_multilingual_v2",
-        "voice_settings": {
-            "stability": 0.30,          # soft child tone
-            "similarity_boost": 0.85,   # voice consistency
-            "style": 0.9,               # expressive
-            "use_speaker_boost": True
+        url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
+        headers = {
+            "xi-api-key": ELEVEN_KEY,
+            "Content-Type": "application/json"
         }
-    }
+        payload = {
+            "text": text,
+            "model_id": "eleven_multilingual_v2",
+            "voice_settings": {
+                "stability": 0.30,
+                "similarity_boost": 0.85,
+                "style": 0.9,
+                "use_speaker_boost": True
+            }
+        }
 
-    response = requests.post(url, json=payload, headers=headers, timeout=30)
-    response.raise_for_status()
+        r = requests.post(url, json=payload, headers=headers, timeout=30)
+        r.raise_for_status()
 
-    with open(audio_file, "wb") as f:
-        f.write(response.content)
+        with open(audio_file, "wb") as f:
+            f.write(r.content)
 
-    return audio_file
+        return audio_file
+
+    except Exception as e:
+        print("❌ ElevenLabs TTS failed:", e)
+        return None
 
 # =========================
 # CHAT API
@@ -180,7 +163,7 @@ def chat(req: ChatRequest):
         "text": req.message
     })
 
-    # GPT reply
+    # GPT Response
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
@@ -199,14 +182,18 @@ def chat(req: ChatRequest):
     })
     save_memory(user_memory)
 
-    # ElevenLabs voice
+    # ElevenLabs Voice
     audio_file = elevenlabs_tts(reply)
 
-    return {
+    result = {
         "reply": reply,
-        "emotion": emotion,
-        "audio": audio_file
+        "emotion": emotion
     }
+
+    if audio_file:
+        result["audio"] = audio_file
+
+    return result
 
 # =========================
 # AUDIO SERVE
@@ -221,4 +208,3 @@ def audio(filename: str):
 @app.get("/history")
 def history(user_id: str):
     return user_memory.get(user_id, {}).get("chat_history", [])
-
