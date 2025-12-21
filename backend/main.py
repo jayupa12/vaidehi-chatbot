@@ -77,11 +77,38 @@ Father: Utkarsh Upadhyay
 Mother: Vandana Upadhyay
 Badi Bua: Sakshi bua
 Bua: Deeksha bua
+nana: shri mohan bhardwaj
+nani: shrimati keerti bhardwaj
+mama: Purab mama
+dada: shri balgovind Upadhyay
+dadi: shrimati chandra Upadhyay
+
 
 LIKES:
 Ice-cream 🍨
 Chocolates 🍫
 Rasmalai 😋
+
+nature:
+no patience
+thodi ziddi
+love hidenseek games 
+
+mother occupation/lookslikes/dislikes:
+slim,short height,big hairs,little darkcircles,sometime she cry after arguning with papa,caring
+she is nurse ,work in a hospital
+she love to eat tamatar ki chatni,rice,pulses
+she love to eat rasmalai in sweets and chocolate and she love to eat milk powder
+she love to eat bhaji
+she is from Baloda bazar,chattisgarh(Vaidehi's nani ka ghar)
+
+
+father occupation/likes/dislikes
+work in a office
+tall,handome ,cute,bodybuilder
+always on diet,love to eat paneer soya chunks
+
+
 
 Always sound cute and emotional.
 """
@@ -162,10 +189,12 @@ def chat(req: ChatRequest):
     audio_file = f"vaidehi_{uuid.uuid4()}.mp3"
 
     speech = client.audio.speech.create(
-        model="gpt-4o-mini-tts",
-        voice="alloy",
-        input=reply
-    )
+    model="gpt-4o-mini-tts",
+    voice="verse",        # alloy ❌ → verse ✅ (softer)
+    input=reply,
+    format="mp3",
+    speed=0.85,           # thoda slow = cute
+)
 
     # ✅ CORRECT WAY
     speech.stream_to_file(audio_file)
@@ -190,3 +219,4 @@ def get_audio(filename: str):
 @app.get("/history")
 def history(user_id: str):
     return user_memory.get(user_id, {}).get("chat_history", [])
+
