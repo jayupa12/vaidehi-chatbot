@@ -210,3 +210,28 @@ input:focus {
     font-size: 16px;
   }
 }
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.call-btn {
+  background: #25d366;
+  border: none;
+  color: white;
+  font-size: 18px;
+  padding: 6px 10px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.call-btn.active {
+  background: #ff4d4d;
+}
+
+.call-btn:active {
+  transform: scale(0.9);
+}
+
+
