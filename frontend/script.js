@@ -52,13 +52,13 @@ function shouldCry(text) {
 }
 
 // ===============================
-// 🔊 PLAY ELEVENLABS VOICE
+// 🔊 PLAY ELEVENLABS BASE64 VOICE
 // ===============================
-function playVaidehiVoice(audioFile) {
-  if (!audioFile) return;
+function playVaidehiVoice(base64Audio) {
+  if (!base64Audio) return;
 
-  const voice = new Audio(`${BACKEND_URL}/audio/${audioFile}`);
-  voice.play().catch(err => {
+  const audio = new Audio(`data:audio/mpeg;base64,${base64Audio}`);
+  audio.play().catch(err => {
     console.log("Voice autoplay blocked", err);
   });
 }
@@ -122,29 +122,29 @@ async function sendMessage() {
       </div>`;
     chat.scrollTop = chat.scrollHeight;
 
-    // 🔔 RECEIVE SOUND
+    // 🔔 RECEIVE SOUND FIRST
     receiveSound.currentTime = 0;
     receiveSound.play().catch(() => {});
 
-    // CLEAR OLD HANDLER
+    // RESET HANDLER
     receiveSound.onended = null;
 
-    // AFTER RECEIVE → EMOTION → VOICE
+    // 🤭😢 EMOTION → 🎤 BACCHI VOICE
     receiveSound.onended = () => {
 
       if (shouldCry(data.reply)) {
         crySound.currentTime = 0;
         crySound.play().catch(() => {});
-      }
+      } 
       else if (shouldGiggle(data.reply)) {
         giggleSound.currentTime = 0;
         giggleSound.play().catch(() => {});
       }
 
-      // 🎤 ELEVENLABS BACCHI VOICE (LAST)
-      if (data.audio) {
+      // 🎤 ELEVENLABS BACCHI VOICE (BASE64)
+      if (data.audio_base64) {
         setTimeout(() => {
-          playVaidehiVoice(data.audio);
+          playVaidehiVoice(data.audio_base64);
         }, 300);
       }
     };
@@ -179,7 +179,6 @@ function toggleCall() {
     recognition.onresult = (event) => {
       const last = event.results.length - 1;
       const speechText = event.results[last][0].transcript;
-
       input.value = speechText;
       sendMessage();
     };
