@@ -1,10 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from openai import OpenAI
 import requests
-import os, json, uuid
+import os, json, base64
 
 # =========================
 # APP
@@ -125,46 +124,40 @@ Always sound cute and emotional.
 # =========================
 def detect_emotion(text: str) -> str:
     t = text.lower()
-    if any(w in t for w in ["hehe", "haha", "😂", "😄", "ice", "icecream", "chocolate", "mumma"]):
+    if any(w in t for w in ["haha", "hehe", "😂", "😄", "ice", "icecream", "chocolate", "mumma"]):
         return "giggle"
     if any(w in t for w in ["nahi", "ro", "cry", "sad", "gussa", "daant"]):
         return "cry"
     return "normal"
 
 # =========================
-# ELEVENLABS TTS (SAFE)
+# ELEVENLABS TTS (BASE64)
 # =========================
-def elevenlabs_tts(text: str):
-    try:
-        audio_file = f"vaidehi_{uuid.uuid4()}.mp3"
+def elevenlabs_tts_base64(text: str) -> str:
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
 
-        url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
-        headers = {
-            "xi-api-key": ELEVEN_KEY,
-            "Content-Type": "application/json"
+    headers = {
+        "xi-api-key": ELEVEN_KEY,
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "text": text,
+        "model_id": "eleven_multilingual_v2",
+        "voice_settings": {
+            "stability": 0.30,
+            "similarity_boost": 0.85,
+            "style": 0.9,
+            "use_speaker_boost": True
         }
-        payload = {
-            "text": text,
-            "model_id": "eleven_multilingual_v2",
-            "voice_settings": {
-                "stability": 0.30,
-                "similarity_boost": 0.85,
-                "style": 0.9,
-                "use_speaker_boost": True
-            }
-        }
+    }
 
-        r = requests.post(url, json=payload, headers=headers, timeout=30)
-        r.raise_for_status()
+    response = requests.post(url, json=payload, headers=headers, timeout=30)
+    response.raise_for_status()
 
-        with open(audio_file, "wb") as f:
-            f.write(r.content)
-
-        return audio_file
-
-    except Exception as e:
-        print("❌ ElevenLabs TTS failed:", e)
-        return None
+    # 🔥 convert audio bytes → base64
+    audio_base64 = base64.b64encode(response.content).decode("utf-8")
+    return audio_base64
 
 # =========================
 # CHAT API
@@ -178,13 +171,13 @@ def chat(req: ChatRequest):
 
     user = user_memory[user_id]
 
-    # Save user message
+    # save user message
     user["chat_history"].append({
         "from": "user",
         "text": req.message
     })
 
-    # GPT Response
+    # GPT reply
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
@@ -196,32 +189,21 @@ def chat(req: ChatRequest):
     reply = response.choices[0].message.content
     emotion = detect_emotion(reply)
 
-    # Save bot message
+    # save bot message
     user["chat_history"].append({
         "from": "vaidehi",
         "text": reply
     })
     save_memory(user_memory)
 
-    # ElevenLabs Voice
-    audio_file = elevenlabs_tts(reply)
+    # 🔊 ElevenLabs audio (BASE64)
+    audio_base64 = elevenlabs_tts_base64(reply)
 
-    result = {
+    return {
         "reply": reply,
-        "emotion": emotion
+        "emotion": emotion,
+        "audio": audio_base64   # 👈 IMPORTANT
     }
-
-    if audio_file:
-        result["audio"] = audio_file
-
-    return result
-
-# =========================
-# AUDIO SERVE
-# =========================
-@app.get("/audio/{filename}")
-def audio(filename: str):
-    return FileResponse(filename, media_type="audio/mpeg")
 
 # =========================
 # CHAT HISTORY
@@ -229,4 +211,3 @@ def audio(filename: str):
 @app.get("/history")
 def history(user_id: str):
     return user_memory.get(user_id, {}).get("chat_history", [])
-
