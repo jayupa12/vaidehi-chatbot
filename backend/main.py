@@ -24,16 +24,20 @@ app.add_middleware(
 )
 
 # =========================
-# KEYS (Render ENV)
+# ENV KEYS
 # =========================
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 ELEVEN_KEY = os.getenv("ELEVENLABS_API_KEY")
 VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID")
 
+print("🔑 OPENAI_KEY exists:", bool(OPENAI_KEY))
+print("🔑 ELEVENLABS_API_KEY exists:", bool(ELEVEN_KEY))
+print("🎤 ELEVENLABS_VOICE_ID:", VOICE_ID)
+
 client = OpenAI(api_key=OPENAI_KEY)
 
 # =========================
-# MEMORY (JSON)
+# MEMORY
 # =========================
 MEMORY_FILE = "memory.json"
 
@@ -129,13 +133,15 @@ def detect_emotion(text: str) -> str:
     return "normal"
 
 # =========================
-# ELEVENLABS TTS (BASE64 SAFE)
+# ELEVENLABS TTS → BASE64
 # =========================
 def elevenlabs_tts_base64(text: str):
     try:
         if not ELEVEN_KEY or not VOICE_ID:
             print("⚠️ ElevenLabs ENV missing")
             return None
+
+        print("🎤 ElevenLabs TTS started")
 
         url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
         headers = {
@@ -155,21 +161,29 @@ def elevenlabs_tts_base64(text: str):
         }
 
         r = requests.post(url, json=payload, headers=headers, timeout=30)
-        r.raise_for_status()
+        print("🔊 ElevenLabs status:", r.status_code)
 
-        return base64.b64encode(r.content).decode("utf-8")
+        if r.status_code != 200:
+            print("❌ ElevenLabs response:", r.text)
+            return None
+
+        audio_base64 = base64.b64encode(r.content).decode("utf-8")
+        print("✅ ElevenLabs audio generated (base64)")
+
+        return audio_base64
 
     except Exception as e:
-        print("❌ ElevenLabs error:", e)
+        print("❌ ElevenLabs exception:", e)
         return None
 
 # =========================
-# CHAT API (🔥 SAFE)
+# CHAT API (SAFE)
 # =========================
 @app.post("/chat")
 def chat(req: ChatRequest):
     try:
         user_id = req.user_id
+        print("💬 Message from user:", user_id, "→", req.message)
 
         if user_id not in user_memory:
             user_memory[user_id] = {"chat_history": []}
@@ -182,7 +196,7 @@ def chat(req: ChatRequest):
             "text": req.message
         })
 
-        # GPT response
+        # GPT reply
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -194,6 +208,9 @@ def chat(req: ChatRequest):
         reply = response.choices[0].message.content
         emotion = detect_emotion(reply)
 
+        print("🤖 GPT reply:", reply)
+        print("😊 Emotion:", emotion)
+
         # Save bot message
         user["chat_history"].append({
             "from": "vaidehi",
@@ -201,8 +218,10 @@ def chat(req: ChatRequest):
         })
         save_memory(user_memory)
 
-        # ElevenLabs audio
+        # ElevenLabs voice
         audio_base64 = elevenlabs_tts_base64(reply)
+
+        print("🎧 audio_base64 exists:", bool(audio_base64))
 
         return {
             "reply": reply,
@@ -219,7 +238,7 @@ def chat(req: ChatRequest):
         }
 
 # =========================
-# CHAT HISTORY
+# HISTORY API
 # =========================
 @app.get("/history")
 def history(user_id: str):
