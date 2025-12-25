@@ -57,10 +57,15 @@ function shouldCry(text) {
 function playVaidehiVoice(base64Audio) {
   if (!base64Audio) return;
 
-  const audio = new Audio(`data:audio/mpeg;base64,${base64Audio}`);
-  audio.play().catch(err => {
-    console.log("Voice autoplay blocked", err);
-  });
+  try {
+    const audio = new Audio(`data:audio/mpeg;base64,${base64Audio}`);
+    audio.volume = 1.0;
+    audio.play().catch(err => {
+      console.log("🔇 Voice autoplay blocked (user interaction needed)", err);
+    });
+  } catch (e) {
+    console.error("❌ Audio play failed", e);
+  }
 }
 
 // ===============================
@@ -126,12 +131,9 @@ async function sendMessage() {
     receiveSound.currentTime = 0;
     receiveSound.play().catch(() => {});
 
-    // RESET HANDLER
-    receiveSound.onended = null;
-
-    // 🤭😢 EMOTION → 🎤 BACCHI VOICE
     receiveSound.onended = () => {
 
+      // 🤭😢 EMOTION
       if (shouldCry(data.reply)) {
         crySound.currentTime = 0;
         crySound.play().catch(() => {});
@@ -151,7 +153,7 @@ async function sendMessage() {
 
   } catch (err) {
     typing.style.display = "none";
-    console.error("Message send failed", err);
+    console.error("❌ Message send failed", err);
   }
 }
 
@@ -179,12 +181,12 @@ function toggleCall() {
     recognition.onresult = (event) => {
       const last = event.results.length - 1;
       const speechText = event.results[last][0].transcript;
+
       input.value = speechText;
       sendMessage();
     };
 
     recognition.onerror = stopCall;
-
   } else {
     stopCall();
   }
